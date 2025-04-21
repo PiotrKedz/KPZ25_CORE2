@@ -1,0 +1,36 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.example.wearos-mergeDebugResources-89:/values-round-v23/values-round-v23.xml",
+            "map": [
+                {
+                    "source": "D:\\Studia\\Semestr 6\\Projekt KPZ - Core Body Temperature\\KPZ25_CORE2-InnerTempv0.3\\AndroidApp\\app\\wearos\\src\\main\\res\\values-round\\strings.xml",
+                    "from": {
+                        "startLines": "1",
+                        "startColumns": "4",
+                        "startOffsets": "16",
+                        "endColumns": "75",
+                        "endOffsets": "87"
+                    },
+                    "to": {
+                        "startLines": "3",
+                        "startColumns": "4",
+                        "startOffsets": "140",
+                        "endColumns": "75",
+                        "endOffsets": "211"
+                    }
+                },
+                {
+                    "source": "C:\\Users\\User\\.gradle\\caches\\8.11.1\\transforms\\7be7055c4cc7d1916b6af0e1a4010cd1\\transformed\\wear-1.3.0\\res\\values-round-v23\\values-round-v23.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "84",
+                        "endOffsets": "135"
+                    }
+                }
+            ]
+        }
+    ]
+}
