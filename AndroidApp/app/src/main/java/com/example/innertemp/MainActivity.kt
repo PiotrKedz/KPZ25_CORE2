@@ -29,6 +29,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
 import com.example.innertemp.ui.theme.InnerTempTheme
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import java.util.*
 
 private const val TAG = "InnerTemp"
@@ -40,9 +42,13 @@ class MainActivity : ComponentActivity() {
     private lateinit var bluetoothAdapter: BluetoothAdapter
     private var bluetoothGatt: BluetoothGatt? = null
     private val _isConnected = mutableStateOf(false)
-    private val _temperatureValue = mutableStateOf(0.0)
-    private val _batteryLevel = mutableStateOf(0)
+    private val _temperatureCore = mutableStateOf(0.0)
+    private val _temperatureSkin = mutableStateOf(0.0)
+    private val _temperatureOutside = mutableStateOf(0.0)
+    private val _batteryLevel = mutableStateOf(0.0)
     private val _isPaused = mutableStateOf(false)
+
+
 
     private val enableBtLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -265,20 +271,45 @@ class MainActivity : ComponentActivity() {
         gatt.setCharacteristicNotification(characteristic, true)
     }
 
+
     private fun handleReceivedData(data: ByteArray) {
         try {
+            // Ensure that there are at least 8 bytes in the array (4 bytes for each temperature)
+            if (data.size >= 8) {
+                // First 4 bytes for the first temperature (assuming it's a Float)
+                val temperatureSkin = ByteBuffer.wrap(data, 0, 4)
+                    .order(ByteOrder.LITTLE_ENDIAN) // Use LITTLE_ENDIAN or BIG_ENDIAN based on your data format
+                    .float.toDouble()  // Convert Float to Double
 
-            val value=data[0].toInt()
+                // Next 4 bytes for the second temperature (assuming it's a Float)
+                val temperatureOutside = ByteBuffer.wrap(data, 4, 4)
+                    .order(ByteOrder.LITTLE_ENDIAN) // Use LITTLE_ENDIAN or BIG_ENDIAN based on your data format
+                    .float.toDouble()  // Convert Float to Double
+
+                val batteryLevel = ByteBuffer.wrap(data, 8, 4)
+                    .order(ByteOrder.LITTLE_ENDIAN) // Use LITTLE_ENDIAN or BIG_ENDIAN based on your data format
+                    .float.toDouble()  // Convert Float to Double
+
+                val temperatureCore = temperatureSkin + temperatureOutside
+
+
                 if (!_isPaused.value) {
                     runOnUiThread {
-                        _temperatureValue.value = value.toDouble()
-                        _batteryLevel.value = value
+
+                        _temperatureSkin.value = temperatureSkin
+                        _temperatureOutside.value = temperatureOutside
+                        _temperatureCore.value = temperatureCore
+                        _batteryLevel.value = batteryLevel
                     }
                 }
+            } else {
+                Log.e(TAG, "Data size is insufficient. Expected at least 8 bytes.")
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Error parsing data: ${e.message}")
         }
     }
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -292,9 +323,11 @@ class MainActivity : ComponentActivity() {
                 ) {
                     AppContent(
                         isConnected = _isConnected,
-                        temperatureValue = _temperatureValue,
+                        temperatureCore = _temperatureCore,
+                        temperatureSkin = _temperatureSkin,
+                        temperatureOutside = _temperatureOutside,
                         batteryLevel = _batteryLevel,
-                        isPaused = _isPaused
+                        isPaused = _isPaused,
                     )
                 }
             }
@@ -311,17 +344,22 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun AppContent(
         isConnected: State<Boolean>,
-        temperatureValue: State<Double>,
-        batteryLevel: State<Int>,
-        isPaused: State<Boolean>
-    ) {
+        temperatureCore: State<Double>,
+        temperatureSkin: State<Double>,
+        temperatureOutside: State<Double>,
+        batteryLevel: State<Double>,
+        isPaused: State<Boolean>,
+
+        ) {
 
         HomeScreen(
             isConnected = isConnected.value,
-            temperatureValue = temperatureValue.value,
+            temperatureOutside = temperatureOutside.value,
+            temperatureSkin = temperatureSkin.value,
+            temperatureCore = temperatureCore.value,
             batteryLevel = batteryLevel.value,
             isPaused = isPaused.value,
-            onPauseToggle = { _isPaused.value = !_isPaused.value }
+            onPauseToggle = { _isPaused.value = !_isPaused.value },
         )
     }
 }
@@ -329,8 +367,10 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun HomeScreen(
     isConnected: Boolean,
-    temperatureValue: Double,
-    batteryLevel: Int,
+    temperatureCore: Double,
+    temperatureSkin: Double,
+    temperatureOutside: Double,
+    batteryLevel: Double,
     isPaused: Boolean,
     onPauseToggle: () -> Unit
 ) {
@@ -381,9 +421,36 @@ fun HomeScreen(
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = if (!isConnected) "-" else if (isPaused) "Paused" else "${temperatureValue}°C",
+                text = if (!isConnected) "-" else if (isPaused) "Paused" else "${temperatureCore}°C",
                 color = colors.onBackground,
                 fontSize = 20.sp
+            )
+            
+            // TEMP DEBUG HERE
+
+            Text(
+                text = "Sensor reading skin:",
+                color = colors.onBackground,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            Text(
+                text = if (!isConnected) "-" else if (isPaused) "Paused" else "${temperatureSkin}°C",
+                color = colors.onBackground,
+                fontSize = 10.sp
+            )
+            Text(
+                text = "Sensor reading outside:",
+                color = colors.onBackground,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            Text(
+                text = if (!isConnected) "-" else if (isPaused) "Paused" else "${temperatureOutside}°C",
+                color = colors.onBackground,
+                fontSize = 10.sp
             )
 
             if (isConnected) {
@@ -412,8 +479,10 @@ fun HomeScreenPreview() {
     InnerTempTheme {
         HomeScreen(
             isConnected = true,
-            temperatureValue = 36.2,
-            batteryLevel = 75,
+            temperatureCore = 36.2,
+            temperatureSkin = 36.2,
+            temperatureOutside = 36.2,
+            batteryLevel = 75.0,
             isPaused = false,
             onPauseToggle = {}
         )

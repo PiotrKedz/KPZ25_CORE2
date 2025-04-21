@@ -6,8 +6,8 @@ from micropython import const
 _IRQ_CENTRAL_CONNECT = const(1)
 _IRQ_CENTRAL_DISCONNECT = const(2)
 
-SERVICE_UUID = bluetooth.UUID(0x180F)  # Battery Service
-CHAR_UUID = bluetooth.UUID(0x2A19)     # Battery Level
+SERVICE_UUID = bluetooth.UUID(0x180F)  # Custom Service (reusing Battery UUID for now)
+CHAR_UUID = bluetooth.UUID(0x2A19)     # Custom Characteristic (reusing Battery Level UUID)
 
 CHAR_PROP_READ_NOTIFY = const(0x02 | 0x10)
 
@@ -55,12 +55,17 @@ def start_advertising():
 ble.irq(bt_irq)
 start_advertising()
 
-# Main loop: send value from 1 to 100
-value = 1
+# Hardcoded sensor values
+temperature1 = 30.0
+temperature2 = 35.0
+battery_level = 50.0
+
+# Main loop
 while True:
     if connected and conn_handle is not None:
-        value = value + 1 if value < 100 else 1
-        ble.gatts_write(char_handle, struct.pack("B", value))
+        # Pack all three floats into a single 12-byte array
+        data = struct.pack("<fff", temperature1, temperature2, battery_level)
+        ble.gatts_write(char_handle, data)
         ble.gatts_notify(conn_handle, char_handle)
-        print("Sent value:", value)
-    time.sleep(0.1)
+        print("Sent data:", data)
+    time.sleep(1)
