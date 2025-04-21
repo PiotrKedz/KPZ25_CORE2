@@ -32,17 +32,13 @@ import com.example.innertemp.ui.theme.InnerTempTheme
 import java.util.*
 
 private const val TAG = "InnerTemp"
-// Common ESP32 service UUID, replace with your actual service UUID if different
 private val SERVICE_UUID = UUID.fromString("4fafc201-1fb5-459e-8fcc-c5c9c331914b")
-// Characteristic UUID for temperature data, replace with your actual characteristic UUID
 private val CHARACTERISTIC_UUID = UUID.fromString("beb5483e-36e1-4688-b7f5-ea07361b26a8")
 
 class MainActivity : ComponentActivity() {
     private var bluetoothEnabled = false
     private lateinit var bluetoothAdapter: BluetoothAdapter
     private var bluetoothGatt: BluetoothGatt? = null
-
-
     private val _isConnected = mutableStateOf(false)
     private val _temperatureValue = mutableStateOf(0.0)
     private val _batteryLevel = mutableStateOf(0)
@@ -75,9 +71,8 @@ class MainActivity : ComponentActivity() {
         val bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
         bluetoothAdapter = bluetoothManager.adapter
 
-        if (bluetoothAdapter == null) {
-            Toast.makeText(this, "Bluetooth not supported", Toast.LENGTH_SHORT).show()
-        } else if (!bluetoothAdapter.isEnabled) {
+
+        if (!bluetoothAdapter.isEnabled) {
             val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
             enableBtLauncher.launch(enableBtIntent)
         } else {
@@ -201,19 +196,16 @@ class MainActivity : ComponentActivity() {
         override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 Log.d(TAG, "Services discovered")
-                // Find the service and characteristic
                 val service = gatt.getService(SERVICE_UUID)
                 if (service != null) {
                     val characteristic = service.getCharacteristic(CHARACTERISTIC_UUID)
                     if (characteristic != null) {
-                        // Enable notifications for the characteristic
                         enableNotifications(gatt, characteristic)
                     } else {
                         Log.e(TAG, "Characteristic not found")
                     }
                 } else {
                     Log.e(TAG, "Service not found")
-                    // Try other known ESP32 service UUIDs or scan all services
                     scanForCharacteristics(gatt)
                 }
             }
@@ -224,7 +216,6 @@ class MainActivity : ComponentActivity() {
             characteristic: BluetoothGattCharacteristic,
             value: ByteArray
         ) {
-            // Handle the received data
             handleReceivedData(value)
         }
 
@@ -240,8 +231,6 @@ class MainActivity : ComponentActivity() {
                     return
                 }
             }
-            // Handle the received data for older versions
-            handleReceivedData(characteristic.value)
         }
     }
 
@@ -253,16 +242,13 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        // Scan all services and characteristics
         for (service in gatt.services) {
             Log.d(TAG, "Found service: ${service.uuid}")
             for (characteristic in service.characteristics) {
                 Log.d(TAG, "  Characteristic: ${characteristic.uuid}")
-                // Check if the characteristic is readable or notifiable
                 val properties = characteristic.properties
                 if ((properties and BluetoothGattCharacteristic.PROPERTY_READ) != 0 ||
                     (properties and BluetoothGattCharacteristic.PROPERTY_NOTIFY) != 0) {
-                    // Try to enable notifications for this characteristic
                     enableNotifications(gatt, characteristic)
                 }
             }
@@ -276,38 +262,19 @@ class MainActivity : ComponentActivity() {
                 return
             }
         }
-
-        // Enable notifications on the characteristic
         gatt.setCharacteristicNotification(characteristic, true)
-
-        // For many BLE devices, writing to the descriptor is needed
-        val descriptor = characteristic.getDescriptor(
-            UUID.fromString("00002902-0000-1000-8000-00805f9b34fb") // Client Characteristic Config descriptor
-        )
-        if (descriptor != null) {
-            descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
-            gatt.writeDescriptor(descriptor)
-        }
     }
 
     private fun handleReceivedData(data: ByteArray) {
         try {
 
             val value=data[0].toInt()
-
-            if (value != null) {
-                Log.d(TAG, "Received value: $value")
-
                 if (!_isPaused.value) {
                     runOnUiThread {
                         _temperatureValue.value = value.toDouble()
-                        // Simulate battery level for demo
                         _batteryLevel.value = value
                     }
                 }
-            } else {
-                Log.d(TAG, "Received non-numeric data: $value")
-            }
         } catch (e: Exception) {
             Log.e(TAG, "Error parsing data: ${e.message}")
         }
@@ -323,7 +290,6 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    // Pass state to the composable
                     AppContent(
                         isConnected = _isConnected,
                         temperatureValue = _temperatureValue,
@@ -333,8 +299,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-
-        // Check permissions and start BLE operations
         checkPermissions()
     }
 
@@ -351,7 +315,7 @@ class MainActivity : ComponentActivity() {
         batteryLevel: State<Int>,
         isPaused: State<Boolean>
     ) {
-        // Show the main screen with provided state
+
         HomeScreen(
             isConnected = isConnected.value,
             temperatureValue = temperatureValue.value,
@@ -370,8 +334,6 @@ fun HomeScreen(
     isPaused: Boolean,
     onPauseToggle: () -> Unit
 ) {
-    var showDevMenu by remember { mutableStateOf(false) }
-    val showDevButton by remember { mutableStateOf(true) }
 
     val colors = MaterialTheme.colorScheme
 
@@ -436,38 +398,6 @@ fun HomeScreen(
                     Text(
                         text = if (isPaused) "Resume" else "Pause",
                         color = colors.onPrimary
-                    )
-                }
-            }
-        }
-
-        // Developer menu (top right)
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.End
-        ) {
-            if (showDevButton) {
-                Button(
-                    onClick = { showDevMenu = !showDevMenu },
-                    colors = ButtonDefaults.buttonColors(containerColor = colors.secondary),
-                    modifier = Modifier.defaultMinSize(minWidth = 60.dp, minHeight = 40.dp)
-                ) {
-                    Text(text = "DEV", color = colors.onSecondary)
-                }
-            }
-
-            if (showDevMenu) {
-                Card(
-                    modifier = Modifier.padding(top = 8.dp),
-                    colors = CardDefaults.cardColors(containerColor = colors.surface)
-                ) {
-                    Text(
-                        text = "BLE Connected: $isConnected",
-                        color = colors.onSurface,
-                        fontSize = 16.sp,
-                        modifier = Modifier.padding(8.dp)
                     )
                 }
             }
