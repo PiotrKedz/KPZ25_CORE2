@@ -32,6 +32,8 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.example.innertemp.ui.theme.InnerTempTheme
 import java.util.*
+import androidx.compose.ui.platform.LocalContext
+
 
 private const val TAG = "InnerTemp"
 private val SERVICE_UUID = UUID.fromString("4fafc201-1fb5-459e-8fcc-c5c9c331914b")
@@ -397,6 +399,18 @@ fun HomeScreen(
     onPauseToggle: () -> Unit
 ) {
 
+    val context = LocalContext.current
+    val tempColor = when {
+        temperatureValue < 36.0 -> androidx.compose.ui.graphics.Color(
+            context.getColor(R.color.blue)
+        )
+        temperatureValue > 38.0 -> androidx.compose.ui.graphics.Color(
+            context.getColor(R.color.red)
+        )
+        else -> androidx.compose.ui.graphics.Color(
+            context.getColor(R.color.green)
+        )
+    }
     val colors = MaterialTheme.colorScheme
 
     Box(
@@ -444,8 +458,9 @@ fun HomeScreen(
             )
             Text(
                 text = if (!isConnected) "-" else if (isPaused) "Paused" else "${temperatureValue}°C",
-                color = colors.onBackground,
-                fontSize = 20.sp
+                color = tempColor,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.SemiBold
             )
 
             if (isConnected) {
