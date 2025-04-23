@@ -32,6 +32,10 @@ import com.example.innertemp.ui.theme.InnerTempTheme
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.*
+import androidx.compose.ui.platform.LocalContext
+import com.example.innertemp.ui.theme.Blue
+import com.example.innertemp.ui.theme.Green
+import com.example.innertemp.ui.theme.Red
 
 private const val TAG = "InnerTemp"
 private val SERVICE_UUID = UUID.fromString("4fafc201-1fb5-459e-8fcc-c5c9c331914b")
@@ -274,8 +278,8 @@ class MainActivity : ComponentActivity() {
 
     private fun handleReceivedData(data: ByteArray) {
         try {
-            // Ensure that there are at least 8 bytes in the array (4 bytes for each temperature)
-            if (data.size >= 8) {
+            // Ensure that there are at least 12 bytes in the array (4 bytes for each temperature and battery level)
+            if (data.size >= 12) {
                 // First 4 bytes for the first temperature (assuming it's a Float)
                 val temperatureSkin = ByteBuffer.wrap(data, 0, 4)
                     .order(ByteOrder.LITTLE_ENDIAN) // Use LITTLE_ENDIAN or BIG_ENDIAN based on your data format
@@ -290,25 +294,31 @@ class MainActivity : ComponentActivity() {
                     .order(ByteOrder.LITTLE_ENDIAN) // Use LITTLE_ENDIAN or BIG_ENDIAN based on your data format
                     .float.toDouble()  // Convert Float to Double
 
-                val temperatureCore = temperatureSkin + temperatureOutside
+                // Round the values to two decimal places
+                val roundedTemperatureSkin = String.format("%.2f", temperatureSkin).toDouble()
+                val roundedTemperatureOutside = String.format("%.2f", temperatureOutside).toDouble()
+                val roundedBatteryLevel = String.format("%.2f", batteryLevel).toDouble()
+                val temperatureCore = roundedTemperatureSkin + roundedTemperatureOutside
+                val roundedTemperatureCore = String.format("%.2f", temperatureCore).toDouble()
+
 
 
                 if (!_isPaused.value) {
                     runOnUiThread {
-
-                        _temperatureSkin.value = temperatureSkin
-                        _temperatureOutside.value = temperatureOutside
-                        _temperatureCore.value = temperatureCore
-                        _batteryLevel.value = batteryLevel
+                        _temperatureSkin.value = roundedTemperatureSkin
+                        _temperatureOutside.value = roundedTemperatureOutside
+                        _temperatureCore.value = roundedTemperatureCore
+                        _batteryLevel.value = roundedBatteryLevel
                     }
                 }
             } else {
-                Log.e(TAG, "Data size is insufficient. Expected at least 8 bytes.")
+                Log.e(TAG, "Data size is insufficient. Expected at least 12 bytes.")
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error parsing data: ${e.message}")
         }
     }
+
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -376,6 +386,22 @@ fun HomeScreen(
 ) {
 
     val colors = MaterialTheme.colorScheme
+    val tempColorSkin = when {
+        temperatureSkin < 36.0 -> Blue
+        temperatureSkin > 38.0 -> Red
+        else -> Green
+    }
+
+    val tempColorOutside = when {
+        temperatureOutside < 36.0 -> Blue
+        temperatureOutside > 38.0 -> Red
+        else -> Green
+    }
+    val tempColorCore = when {
+        temperatureCore < 36.0 -> Blue
+        temperatureCore > 38.0 -> Red
+        else -> Green
+    }
 
     Box(
         modifier = Modifier
@@ -422,10 +448,11 @@ fun HomeScreen(
             )
             Text(
                 text = if (!isConnected) "-" else if (isPaused) "Paused" else "${temperatureCore}°C",
-                color = colors.onBackground,
-                fontSize = 20.sp
+                color = tempColorCore,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.SemiBold
             )
-            
+
             // TEMP DEBUG HERE
 
             Text(
@@ -437,8 +464,9 @@ fun HomeScreen(
 
             Text(
                 text = if (!isConnected) "-" else if (isPaused) "Paused" else "${temperatureSkin}°C",
-                color = colors.onBackground,
-                fontSize = 10.sp
+                color = tempColorSkin,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.SemiBold
             )
             Text(
                 text = "Sensor reading outside:",
@@ -449,8 +477,9 @@ fun HomeScreen(
 
             Text(
                 text = if (!isConnected) "-" else if (isPaused) "Paused" else "${temperatureOutside}°C",
-                color = colors.onBackground,
-                fontSize = 10.sp
+                color = tempColorOutside,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.SemiBold
             )
 
             if (isConnected) {

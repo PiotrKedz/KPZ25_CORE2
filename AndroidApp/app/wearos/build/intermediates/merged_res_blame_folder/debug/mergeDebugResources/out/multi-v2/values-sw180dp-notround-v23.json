@@ -1,0 +1,19 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.example.wearos-mergeDebugResources-89:/values-sw180dp-notround-v23/values-sw180dp-notround-v23.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\User\\.gradle\\caches\\8.11.1\\transforms\\7be7055c4cc7d1916b6af0e1a4010cd1\\transformed\\wear-1.3.0\\res\\values-sw180dp-notround-v23\\values-sw180dp-notround-v23.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6,7",
+                        "startColumns": "4,4,4,4,4,4",
+                        "startOffsets": "55,123,188,259,322,385",
+                        "endColumns": "67,64,70,62,62,64",
+                        "endOffsets": "118,183,254,317,380,445"
+                    }
+                }
+            ]
+        }
+    ]
+}

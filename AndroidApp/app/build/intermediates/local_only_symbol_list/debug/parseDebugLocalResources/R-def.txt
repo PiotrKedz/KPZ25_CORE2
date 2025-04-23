@@ -12,6 +12,8 @@ drawable ic_launcher_foreground
 mipmap ic_launcher
 mipmap ic_launcher_round
 string app_name
+string channel_description
+string channel_name
 style Theme.InnerTemp
 xml backup_rules
 xml data_extraction_rules
