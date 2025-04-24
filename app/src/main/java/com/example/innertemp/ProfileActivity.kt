@@ -304,25 +304,21 @@ fun ProfileScreen(onBack: () -> Unit) {
 
             Button(onClick = {
                 if (isEditMode) {
-                    isDataChanged = false
-                    val heightValue = height.toIntOrNull()
                     heightErrorMessage = ""
+                    val heightValue = height.toIntOrNull()
 
-                    when {
-                        heightValue == null -> {
-                            heightErrorMessage = "Invalid height input."
-                        }
-                        heightValue < 50 -> {
-                            heightErrorMessage = "Entered height is too small."
-                        }
-                        heightValue > 250 -> {
-                            heightErrorMessage = "Entered height is too big."
-                        }
-                        else -> {
-                            saveUserProfile(context, name, selectedGender, dateOfBirth, height, weight)
-                            isEditMode = false
-                            isDataChanged = false
-                        }
+                    if (heightValue == null) {
+                        heightErrorMessage = "Invalid height input."
+                    } else if (heightValue < 50) {
+                        heightErrorMessage = "Entered height is too small."
+                    } else if (heightValue > 250) {
+                        heightErrorMessage = "Entered height is too big."
+                    }
+
+                    if (heightErrorMessage.isEmpty()) {
+                        saveUserProfile(context, name, selectedGender, dateOfBirth, height, weight)
+                        isEditMode = false
+                        isDataChanged = false
                     }
                 } else {
                     isEditMode = true
@@ -330,6 +326,7 @@ fun ProfileScreen(onBack: () -> Unit) {
             }) {
                 Text(if (isEditMode) "Save" else "Edit")
             }
+
 
             if (heightErrorMessage.isNotEmpty()) {
                 Text(
