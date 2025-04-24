@@ -42,6 +42,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.material.icons.filled.History
+
 
 
 private const val TAG = "InnerTemp"
@@ -347,7 +349,12 @@ class MainActivity : ComponentActivity() {
                         isPaused = _isPaused,
                         onGoToProfile = {
                             val intent = Intent(this, ProfileActivity::class.java)
-                            startActivity(intent)},
+                            startActivity(intent)
+                            overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right)},
+                        onGoToHistory = {
+                            val intent = Intent(this, HistoryActivity::class.java)
+                            startActivity(intent)
+                            overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)},
                     )
                 }
             }
@@ -370,7 +377,7 @@ class MainActivity : ComponentActivity() {
         batteryLevel: State<Double>,
         isPaused: State<Boolean>,
         onGoToProfile: () -> Unit,
-
+        onGoToHistory: () -> Unit,
         ) {
 
         HomeScreen(
@@ -382,6 +389,7 @@ class MainActivity : ComponentActivity() {
             isPaused = isPaused.value,
             onPauseToggle = { _isPaused.value = !_isPaused.value },
             onGoToProfile = onGoToProfile,
+            onGoToHistory = onGoToHistory,
         )
     }
 }
@@ -396,8 +404,8 @@ fun HomeScreen(
     batteryLevel: Double,
     isPaused: Boolean,
     onPauseToggle: () -> Unit,
-    onGoToProfile: () -> Unit
-
+    onGoToProfile: () -> Unit,
+    onGoToHistory: () -> Unit
 ) {
 
     val colors = MaterialTheme.colorScheme
@@ -427,6 +435,11 @@ fun HomeScreen(
                         modifier = Modifier.fillMaxWidth(),
                         textAlign = TextAlign.Center
                     )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onGoToHistory) {
+                        Icon(Icons.Default.History, contentDescription = "History")
+                    }
                 },
                 actions = {
                     IconButton(onClick = onGoToProfile) {
@@ -549,7 +562,8 @@ fun HomeScreenPreview() {
             batteryLevel = 75.0,
             isPaused = false,
             onPauseToggle = {},
-            onGoToProfile = {}
+            onGoToProfile = {},
+            onGoToHistory = {},
         )
     }
 }

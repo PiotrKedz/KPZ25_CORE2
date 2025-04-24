@@ -10,5 +10,5 @@
     <string name="app_name">InnerTemp</string>
     <string name="channel_description">Notifications of temperature out of range</string>
     <string name="channel_name">TEMP_ALERT</string>
-    <style name="Theme.InnerTemp" parent="android:Theme.Material.Light.NoActionBar"/>
+    <style name="Theme.InnerTemp" parent="Theme.MaterialComponents.DayNight.NoActionBar"/>
 </resources>

@@ -36,8 +36,13 @@
         android:testOnly="true"
         android:theme="@style/Theme.InnerTemp" >
         <activity
+            android:name="com.example.innertemp.HistoryActivity"
+            android:exported="false"
+            android:theme="@style/Theme.InnerTemp" />
+        <activity
             android:name="com.example.innertemp.ProfileActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:theme="@style/Theme.InnerTemp" />
         <activity
             android:name="com.example.innertemp.MainActivity"
             android:exported="true"

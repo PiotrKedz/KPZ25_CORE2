@@ -42,6 +42,10 @@ int anim m3_side_sheet_exit_to_right 0x7f010028
 int anim mtrl_bottom_sheet_slide_in 0x7f010029
 int anim mtrl_bottom_sheet_slide_out 0x7f01002a
 int anim mtrl_card_lowers_interpolator 0x7f01002b
+int anim slide_in_left 0x7f01002c
+int anim slide_in_right 0x7f01002e
+int anim slide_out_left 0x7f01002f
+int anim slide_out_right 0x7f01002d
 int animator design_appbar_state_list_animator 0x7f020000
 int animator design_fab_hide_motion_spec 0x7f020001
 int animator design_fab_show_motion_spec 0x7f020002
@@ -3748,6 +3752,7 @@ int layout abc_search_dropdown_item_icons_2line 0x7f0b0018
 int layout abc_search_view 0x7f0b0019
 int layout abc_select_dialog_material 0x7f0b001a
 int layout abc_tooltip 0x7f0b001b
+int layout activity_history 0x7f0b006c
 int layout activity_profile 0x7f0b001c
 int layout custom_dialog 0x7f0b001d
 int layout design_bottom_navigation_item 0x7f0b001e
