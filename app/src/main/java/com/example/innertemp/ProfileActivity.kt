@@ -63,16 +63,20 @@ fun ProfileScreen(onBack: () -> Unit) {
     val month = calendar.get(Calendar.MONTH)
     val day = calendar.get(Calendar.DAY_OF_MONTH)
     var isDataChanged by remember { mutableStateOf(false) }
-    val datePickerDialog = DatePickerDialog(
-        context,
-        { _, year, monthOfYear, dayOfMonth ->
-            dateOfBirth = "$dayOfMonth/${monthOfYear + 1}/$year"
-            isDataChanged = true
-        },
-        year,
-        month,
-        day
-    )
+
+    val datePickerDialog = remember {
+        DatePickerDialog(
+            context,
+            { _, year, monthOfYear, dayOfMonth ->
+                dateOfBirth = "$dayOfMonth/${monthOfYear + 1}/$year"
+                isDataChanged = true
+            },
+            year,
+            month,
+            day
+        )
+    }
+
     var height by remember { mutableStateOf("") }
     var weight by remember { mutableStateOf("") }
     var heightErrorMessage by remember { mutableStateOf("") }
@@ -221,8 +225,7 @@ fun ProfileScreen(onBack: () -> Unit) {
 
             Row(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(enabled = isEditMode) { datePickerDialog.show() },
+                    .fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Text("Date of Birth:", fontSize = 18.sp)
@@ -234,8 +237,11 @@ fun ProfileScreen(onBack: () -> Unit) {
                         onValueChange = { isDataChanged = true},
                         label = { Text("Select date of birth") },
                         readOnly = true,
-                        enabled = true,
-                        modifier = Modifier.weight(1f)
+                        enabled = false,
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable { datePickerDialog.show() }
+
                     )
                 } else {
                     Text(
@@ -335,7 +341,7 @@ fun ProfileScreen(onBack: () -> Unit) {
             if (showExitDialog) {
                 AlertDialog(
                     onDismissRequest = { showExitDialog = false },
-                    title = { Text("Changes have not been saved") },
+                    title = { Text("Changes have not been saved.") },
                     text = { Text("Do you want to continue?") },
                     confirmButton = {
                         Button(
