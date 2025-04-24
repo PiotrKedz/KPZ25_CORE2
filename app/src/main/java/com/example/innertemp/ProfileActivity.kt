@@ -123,7 +123,13 @@ fun ProfileScreen(onBack: () -> Unit) {
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = { onBack() }) {
+                    IconButton(onClick = {
+                        if (isDataChanged) {
+                            showExitDialog = true
+                        } else {
+                            onBack()
+                        }
+                    }) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
@@ -146,9 +152,9 @@ fun ProfileScreen(onBack: () -> Unit) {
                 if (isEditMode) {
                     OutlinedTextField(
                         value = name,
-                        onValueChange = { name = it },
+                        onValueChange = { name = it; isDataChanged = true},
                         label = { Text("Enter your name") },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
                     )
                 } else {
                     Text(
@@ -173,7 +179,7 @@ fun ProfileScreen(onBack: () -> Unit) {
                     ) {
                         OutlinedTextField(
                             value = selectedGender,
-                            onValueChange = { },
+                            onValueChange = {isDataChanged = true },
                             label = { Text("Select gender") },
                             readOnly = true,
                             trailingIcon = {
@@ -225,7 +231,7 @@ fun ProfileScreen(onBack: () -> Unit) {
                 if (isEditMode) {
                     OutlinedTextField(
                         value = dateOfBirth,
-                        onValueChange = { },
+                        onValueChange = { isDataChanged = true},
                         label = { Text("Select date of birth") },
                         readOnly = true,
                         enabled = true,
@@ -249,7 +255,7 @@ fun ProfileScreen(onBack: () -> Unit) {
                 if (isEditMode) {
                     OutlinedTextField(
                         value = height,
-                        onValueChange = { height = it },
+                        onValueChange = { height = it; isDataChanged = true },
                         label = { Text("Enter height") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         trailingIcon = { Text("cm") },
@@ -273,7 +279,7 @@ fun ProfileScreen(onBack: () -> Unit) {
                 if (isEditMode) {
                     OutlinedTextField(
                         value = weight,
-                        onValueChange = { weight = it },
+                        onValueChange = { weight = it; isDataChanged = true },
                         label = { Text("Enter weight") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         trailingIcon = { Text("kg") },
@@ -292,6 +298,7 @@ fun ProfileScreen(onBack: () -> Unit) {
 
             Button(onClick = {
                 if (isEditMode) {
+                    isDataChanged = false
                     val heightValue = height.toIntOrNull()
                     heightErrorMessage = ""
 
