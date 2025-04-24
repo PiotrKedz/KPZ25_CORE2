@@ -35,6 +35,14 @@ import java.util.*
 import com.example.innertemp.ui.theme.Blue
 import com.example.innertemp.ui.theme.Green
 import com.example.innertemp.ui.theme.Red
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.Text
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.ui.text.style.TextAlign
+
 
 private const val TAG = "InnerTemp"
 private val SERVICE_UUID = UUID.fromString("4fafc201-1fb5-459e-8fcc-c5c9c331914b")
@@ -378,6 +386,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     isConnected: Boolean,
@@ -409,8 +418,27 @@ fun HomeScreen(
         else -> Green
     }
 
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = "Home",
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center
+                    )
+                },
+                actions = {
+                    IconButton(onClick = onGoToProfile) {
+                        Icon(Icons.Default.Person, contentDescription = "Profile")
+                    }
+                }
+            )
+        },
+        content = { paddingValues ->
     Box(
         modifier = Modifier
+            .padding(paddingValues)
             .fillMaxSize()
             .background(colors.background)
     ) {
@@ -488,19 +516,6 @@ fun HomeScreen(
                 fontWeight = FontWeight.SemiBold
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(
-                onClick = onGoToProfile,
-                colors = ButtonDefaults.buttonColors(containerColor = colors.primary),
-                modifier = Modifier
-                    .defaultMinSize(minWidth = 120.dp)
-            ) {
-                Text(
-                    text = "Profile",
-                    color = colors.onPrimary
-                )
-            }
-
             if (isConnected) {
                 Spacer(modifier = Modifier.height(24.dp))
                 Button(
@@ -519,6 +534,7 @@ fun HomeScreen(
 
         }
     }
+})
 }
 
 @Preview(showBackground = true)

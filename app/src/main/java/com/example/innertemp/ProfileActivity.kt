@@ -167,7 +167,8 @@ fun ProfileScreen(onBack: () -> Unit) {
                 Spacer(modifier = Modifier.width(8.dp))
                 ExposedDropdownMenuBox(
                     expanded = genderExpanded,
-                    onExpandedChange = { genderExpanded = !it },
+                    onExpandedChange = { genderExpanded = !it
+                        println("Gender expanded: $genderExpanded")},
                     modifier = Modifier.weight(1f)
                 ) {
                     OutlinedTextField(
@@ -180,18 +181,33 @@ fun ProfileScreen(onBack: () -> Unit) {
                         },
                         modifier = Modifier
                             .fillMaxWidth()
+                            .clickable { genderExpanded = !genderExpanded }
                     )
 
                     ExposedDropdownMenu(
                         expanded = genderExpanded,
                         onDismissRequest = { genderExpanded = false }
                     ) {
-                        DropdownMenuItem(text = { Text("Male") }, onClick = { selectedGender = "Male"; genderExpanded = false; isDataChanged = true })
-                        DropdownMenuItem(text = { Text("Female") }, onClick = { selectedGender = "Female"; genderExpanded = false; isDataChanged = true })
-                        DropdownMenuItem(text = { Text("Other") }, onClick = { selectedGender = "Other"; genderExpanded = false; isDataChanged = true })
+                        DropdownMenuItem(text = { Text("Male") }, onClick = {
+                            selectedGender = "Male"
+                            genderExpanded = false
+                            isDataChanged = true
+                        })
+                        DropdownMenuItem(text = { Text("Female") }, onClick = {
+                            selectedGender = "Female"
+                            genderExpanded = false
+                            isDataChanged = true
+                        })
+                        DropdownMenuItem(text = { Text("Other") }, onClick = {
+                            selectedGender = "Other"
+                            genderExpanded = false
+                            isDataChanged = true
+                        })
                     }
                 }
+
             }
+
             Spacer(modifier = Modifier.height(16.dp))
             Row(
                 modifier = Modifier
