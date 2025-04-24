@@ -1,0 +1,227 @@
+package com.example.innertemp
+
+import android.app.DatePickerDialog
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.innertemp.ui.theme.InnerTempTheme
+import androidx.compose.ui.tooling.preview.Preview
+import java.util.Calendar
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import android.content.Context
+
+
+class ProfileActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            InnerTempTheme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    ProfileScreen(onBack = { finish() })
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ProfileScreen(onBack: () -> Unit) {
+    var name by remember { mutableStateOf("") }
+    var genderExpanded by remember { mutableStateOf(false) }
+    var selectedGender by remember { mutableStateOf("") }
+    val context = LocalContext.current
+    var dateOfBirth by remember { mutableStateOf("") }
+    val calendar = Calendar.getInstance()
+    val year = calendar.get(Calendar.YEAR)
+    val month = calendar.get(Calendar.MONTH)
+    val day = calendar.get(Calendar.DAY_OF_MONTH)
+    val datePickerDialog = DatePickerDialog(
+        context,
+        { _, year, monthOfYear, dayOfMonth ->
+            dateOfBirth = "$dayOfMonth/${monthOfYear + 1}/$year"
+        },
+        year,
+        month,
+        day
+    )
+    var height by remember { mutableStateOf("") }
+    var weight by remember { mutableStateOf("") }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        "Profile",
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                }
+            )
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .padding(paddingValues)
+                .fillMaxSize()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.height(32.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Name:", fontSize = 18.sp)
+                Spacer(modifier = Modifier.width(8.dp))
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { newName ->
+                        name = newName.filter { it.isLetter() || it.isWhitespace() }
+                    },
+                    label = {Text("Enter your name") },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Gender:", fontSize = 18.sp)
+                Spacer(modifier = Modifier.width(8.dp))
+                ExposedDropdownMenuBox(
+                    expanded = genderExpanded,
+                    onExpandedChange = { genderExpanded = !it },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    OutlinedTextField(
+                        value = selectedGender,
+                        onValueChange = { },
+                        label = { Text("Select gender") },
+                        readOnly = true,
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = genderExpanded)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                    )
+
+                    ExposedDropdownMenu(
+                        expanded = genderExpanded,
+                        onDismissRequest = { genderExpanded = false }
+                    ) {
+                        DropdownMenuItem(text = { Text("Male") }, onClick = { selectedGender = "Male"; genderExpanded = false })
+                        DropdownMenuItem(text = { Text("Female") }, onClick = { selectedGender = "Female"; genderExpanded = false })
+                        DropdownMenuItem(text = { Text("Other") }, onClick = { selectedGender = "Other"; genderExpanded = false })
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { datePickerDialog.show() },
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Date of Birth:", fontSize = 18.sp)
+                Spacer(modifier = Modifier.width(8.dp))
+                OutlinedTextField(
+                    value = dateOfBirth,
+                    onValueChange = { },
+                    label = { Text("Select date") },
+                    readOnly = true,
+                    enabled = false,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Height:", fontSize = 18.sp)
+                Spacer(modifier = Modifier.width(8.dp))
+                OutlinedTextField(
+                    value = height,
+                    onValueChange = { newValue ->
+                        if (newValue.all { it.isDigit() }) {
+                            height = newValue
+                        }
+                    },
+                    label = { Text("Enter height") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    trailingIcon = {Text("cm")},
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Weight:", fontSize = 18.sp)
+                Spacer(modifier = Modifier.width(8.dp))
+                OutlinedTextField(
+                    value = weight,
+                    onValueChange = { newValue ->
+                        if (newValue.all { it.isDigit() }) {
+                            weight = newValue
+                        }
+                    },
+                    label = { Text("Enter weight") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    trailingIcon = {Text("kg")},
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = {
+                onBack()
+                // Implement save logic here
+            }) {
+                Text("Save")
+            }
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ProfileScreenPreview() {
+    InnerTempTheme {
+        ProfileScreen(onBack = {})
+    }
+}
