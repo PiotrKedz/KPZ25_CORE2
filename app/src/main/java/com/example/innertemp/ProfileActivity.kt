@@ -62,10 +62,12 @@ fun ProfileScreen(onBack: () -> Unit) {
     val year = calendar.get(Calendar.YEAR)
     val month = calendar.get(Calendar.MONTH)
     val day = calendar.get(Calendar.DAY_OF_MONTH)
+    var isDataChanged by remember { mutableStateOf(false) }
     val datePickerDialog = DatePickerDialog(
         context,
         { _, year, monthOfYear, dayOfMonth ->
             dateOfBirth = "$dayOfMonth/${monthOfYear + 1}/$year"
+            isDataChanged = true
         },
         year,
         month,
@@ -73,6 +75,11 @@ fun ProfileScreen(onBack: () -> Unit) {
     )
     var height by remember { mutableStateOf("") }
     var weight by remember { mutableStateOf("") }
+    var heightErrorMessage by remember { mutableStateOf("") }
+    var showExitDialog by remember { mutableStateOf(false) }
+
+
+
 
     LaunchedEffect(Unit) {
         val sharedPref = context.getSharedPreferences("user_profile", Context.MODE_PRIVATE)
@@ -114,7 +121,13 @@ fun ProfileScreen(onBack: () -> Unit) {
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = {
+                        if (isDataChanged) {
+                            showExitDialog = true
+                        } else {
+                            onBack()
+                        }
+                    }) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
@@ -139,6 +152,7 @@ fun ProfileScreen(onBack: () -> Unit) {
                     value = name,
                     onValueChange = { newName ->
                         name = newName.filter { it.isLetter() || it.isWhitespace() }
+                        isDataChanged = true
                     },
                     label = {Text("Enter your name") },
                     modifier = Modifier.weight(1f)
@@ -172,9 +186,9 @@ fun ProfileScreen(onBack: () -> Unit) {
                         expanded = genderExpanded,
                         onDismissRequest = { genderExpanded = false }
                     ) {
-                        DropdownMenuItem(text = { Text("Male") }, onClick = { selectedGender = "Male"; genderExpanded = false })
-                        DropdownMenuItem(text = { Text("Female") }, onClick = { selectedGender = "Female"; genderExpanded = false })
-                        DropdownMenuItem(text = { Text("Other") }, onClick = { selectedGender = "Other"; genderExpanded = false })
+                        DropdownMenuItem(text = { Text("Male") }, onClick = { selectedGender = "Male"; genderExpanded = false; isDataChanged = true })
+                        DropdownMenuItem(text = { Text("Female") }, onClick = { selectedGender = "Female"; genderExpanded = false; isDataChanged = true })
+                        DropdownMenuItem(text = { Text("Other") }, onClick = { selectedGender = "Other"; genderExpanded = false; isDataChanged = true })
                     }
                 }
             }
@@ -208,6 +222,7 @@ fun ProfileScreen(onBack: () -> Unit) {
                     onValueChange = { newValue ->
                         if (newValue.all { it.isDigit() }) {
                             height = newValue
+                            isDataChanged = true
                         }
                     },
                     label = { Text("Enter height") },
@@ -228,6 +243,7 @@ fun ProfileScreen(onBack: () -> Unit) {
                     onValueChange = { newValue ->
                         if (newValue.all { it.isDigit() }) {
                             weight = newValue
+                            isDataChanged = true
                         }
                     },
                     label = { Text("Enter weight") },
@@ -238,11 +254,63 @@ fun ProfileScreen(onBack: () -> Unit) {
             }
             Spacer(modifier = Modifier.height(16.dp))
             Button(onClick = {
-                saveUserProfile(context, name, selectedGender, dateOfBirth, height, weight)
-                onBack()
+                val heightValue = height.toIntOrNull()
+                heightErrorMessage = ""
+
+                when {
+                    heightValue == null -> {
+                        heightErrorMessage = "Invalid height input."
+                    }
+                    heightValue < 50 -> {
+                        heightErrorMessage = "Entered height is too small."
+                    }
+                    heightValue > 250 -> {
+                        heightErrorMessage = "Entered height is too big."
+                    }
+                    else -> {
+                        saveUserProfile(context, name, selectedGender, dateOfBirth, height, weight)
+                        isDataChanged = false
+                        onBack()
+                    }
+                }
             }) {
                 Text("Save")
             }
+            if (heightErrorMessage.isNotEmpty()) {
+                Text(
+                    text = heightErrorMessage,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+            if (showExitDialog) {
+                AlertDialog(
+                    onDismissRequest = { showExitDialog = false },
+                    title = { Text("Changes have not been saved") },
+                    text = { Text("Do you want to continue?") },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                showExitDialog = false
+                                onBack()
+                            }
+                        ) {
+                            Text("Continue")
+                        }
+                    },
+                    dismissButton = {
+                        Button(
+                            onClick = {
+                                showExitDialog = false
+                            }
+                        ) {
+                            Text("Cancel")
+                        }
+                    }
+                )
+            }
+
+
         }
     }
 }
