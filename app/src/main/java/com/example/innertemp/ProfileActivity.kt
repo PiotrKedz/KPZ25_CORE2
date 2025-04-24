@@ -74,6 +74,35 @@ fun ProfileScreen(onBack: () -> Unit) {
     var height by remember { mutableStateOf("") }
     var weight by remember { mutableStateOf("") }
 
+    LaunchedEffect(Unit) {
+        val sharedPref = context.getSharedPreferences("user_profile", Context.MODE_PRIVATE)
+        name = sharedPref.getString("name", "") ?: ""
+        selectedGender = sharedPref.getString("gender", "") ?: ""
+        dateOfBirth = sharedPref.getString("dob", "") ?: ""
+        height = sharedPref.getString("height", "") ?: ""
+        weight = sharedPref.getString("weight", "") ?: ""
+    }
+
+    fun saveUserProfile(
+        context: Context,
+        name: String,
+        gender: String,
+        dateOfBirth: String,
+        height: String,
+        weight: String
+    ) {
+        val sharedPref = context.getSharedPreferences("user_profile", Context.MODE_PRIVATE)
+        with(sharedPref.edit()) {
+            putString("name", name)
+            putString("gender", gender)
+            putString("dob", dateOfBirth)
+            putString("height", height)
+            putString("weight", weight)
+            apply()
+        }
+    }
+
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -209,8 +238,8 @@ fun ProfileScreen(onBack: () -> Unit) {
             }
             Spacer(modifier = Modifier.height(16.dp))
             Button(onClick = {
+                saveUserProfile(context, name, selectedGender, dateOfBirth, height, weight)
                 onBack()
-                // Implement save logic here
             }) {
                 Text("Save")
             }
