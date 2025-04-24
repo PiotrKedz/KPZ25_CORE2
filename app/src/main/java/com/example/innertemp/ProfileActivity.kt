@@ -77,6 +77,8 @@ fun ProfileScreen(onBack: () -> Unit) {
     var weight by remember { mutableStateOf("") }
     var heightErrorMessage by remember { mutableStateOf("") }
     var showExitDialog by remember { mutableStateOf(false) }
+    var isEditMode by remember { mutableStateOf(false) }
+
 
 
 
@@ -115,19 +117,13 @@ fun ProfileScreen(onBack: () -> Unit) {
             TopAppBar(
                 title = {
                     Text(
-                        "Profile",
+                        if (isEditMode) "Edit Profile" else "Profile",
                         modifier = Modifier.fillMaxWidth(),
                         textAlign = TextAlign.Center
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = {
-                        if (isDataChanged) {
-                            showExitDialog = true
-                        } else {
-                            onBack()
-                        }
-                    }) {
+                    IconButton(onClick = { onBack() }) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
@@ -142,156 +138,186 @@ fun ProfileScreen(onBack: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(32.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Name:", fontSize = 18.sp)
-                Spacer(modifier = Modifier.width(8.dp))
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { newName ->
-                        name = newName.filter { it.isLetter() || it.isWhitespace() }
-                        isDataChanged = true
-                    },
-                    label = {Text("Enter your name") },
-                    modifier = Modifier.weight(1f)
-                )
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Gender:", fontSize = 18.sp)
-                Spacer(modifier = Modifier.width(8.dp))
-                ExposedDropdownMenuBox(
-                    expanded = genderExpanded,
-                    onExpandedChange = { genderExpanded = !it
-                        println("Gender expanded: $genderExpanded")},
-                    modifier = Modifier.weight(1f)
-                ) {
+
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                // Text("Name:", fontSize = 18.sp)
+                // Spacer(modifier = Modifier.width(8.dp))
+
+                if (isEditMode) {
                     OutlinedTextField(
-                        value = selectedGender,
-                        onValueChange = { },
-                        label = { Text("Select gender") },
-                        readOnly = true,
-                        trailingIcon = {
-                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = genderExpanded)
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { genderExpanded = !genderExpanded }
+                        value = name,
+                        onValueChange = { name = it },
+                        label = { Text("Enter your name") },
+                        modifier = Modifier.weight(1f)
                     )
-
-                    ExposedDropdownMenu(
-                        expanded = genderExpanded,
-                        onDismissRequest = { genderExpanded = false }
-                    ) {
-                        DropdownMenuItem(text = { Text("Male") }, onClick = {
-                            selectedGender = "Male"
-                            genderExpanded = false
-                            isDataChanged = true
-                        })
-                        DropdownMenuItem(text = { Text("Female") }, onClick = {
-                            selectedGender = "Female"
-                            genderExpanded = false
-                            isDataChanged = true
-                        })
-                        DropdownMenuItem(text = { Text("Other") }, onClick = {
-                            selectedGender = "Other"
-                            genderExpanded = false
-                            isDataChanged = true
-                        })
-                    }
+                } else {
+                    Text(
+                        text = if (name.isEmpty()) "Name: Not set" else "Name: $name",
+                        style = MaterialTheme.typography.bodyLarge.copy(textAlign = TextAlign.Center, fontSize = 20.sp),
+                        modifier = Modifier.weight(1f)
+                    )
                 }
-
             }
 
             Spacer(modifier = Modifier.height(16.dp))
+
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                // Text("Gender:", fontSize = 18.sp)
+                // Spacer(modifier = Modifier.width(8.dp))
+
+                if (isEditMode) {
+                    ExposedDropdownMenuBox(
+                        expanded = genderExpanded,
+                        onExpandedChange = { genderExpanded = !it },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        OutlinedTextField(
+                            value = selectedGender,
+                            onValueChange = { },
+                            label = { Text("Select gender") },
+                            readOnly = true,
+                            trailingIcon = {
+                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = genderExpanded)
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { genderExpanded = !genderExpanded }
+                        )
+
+                        ExposedDropdownMenu(
+                            expanded = genderExpanded,
+                            onDismissRequest = { genderExpanded = false }
+                        ) {
+                            DropdownMenuItem(text = { Text("Male") }, onClick = {
+                                selectedGender = "Male"
+                                genderExpanded = false
+                            })
+                            DropdownMenuItem(text = { Text("Female") }, onClick = {
+                                selectedGender = "Female"
+                                genderExpanded = false
+                            })
+                            DropdownMenuItem(text = { Text("Other") }, onClick = {
+                                selectedGender = "Other"
+                                genderExpanded = false
+                            })
+                        }
+                    }
+                } else {
+                    Text(
+                        text = if (selectedGender.isEmpty()) "Gender: Not set" else "Gender: $selectedGender",
+                        style = MaterialTheme.typography.bodyLarge.copy(textAlign = TextAlign.Center, fontSize = 20.sp),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { datePickerDialog.show() },
+                    .clickable(enabled = isEditMode) { datePickerDialog.show() },
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Date of Birth:", fontSize = 18.sp)
-                Spacer(modifier = Modifier.width(8.dp))
-                OutlinedTextField(
-                    value = dateOfBirth,
-                    onValueChange = { },
-                    label = { Text("Select date") },
-                    readOnly = true,
-                    enabled = false,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Height:", fontSize = 18.sp)
-                Spacer(modifier = Modifier.width(8.dp))
-                OutlinedTextField(
-                    value = height,
-                    onValueChange = { newValue ->
-                        if (newValue.all { it.isDigit() }) {
-                            height = newValue
-                            isDataChanged = true
-                        }
-                    },
-                    label = { Text("Enter height") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    trailingIcon = {Text("cm")},
-                    modifier = Modifier.weight(1f)
-                )
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Weight:", fontSize = 18.sp)
-                Spacer(modifier = Modifier.width(8.dp))
-                OutlinedTextField(
-                    value = weight,
-                    onValueChange = { newValue ->
-                        if (newValue.all { it.isDigit() }) {
-                            weight = newValue
-                            isDataChanged = true
-                        }
-                    },
-                    label = { Text("Enter weight") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    trailingIcon = {Text("kg")},
-                    modifier = Modifier.weight(1f)
-                )
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(onClick = {
-                val heightValue = height.toIntOrNull()
-                heightErrorMessage = ""
+                // Text("Date of Birth:", fontSize = 18.sp)
+                // Spacer(modifier = Modifier.width(8.dp))
 
-                when {
-                    heightValue == null -> {
-                        heightErrorMessage = "Invalid height input."
+                if (isEditMode) {
+                    OutlinedTextField(
+                        value = dateOfBirth,
+                        onValueChange = { },
+                        label = { Text("Select date of birth") },
+                        readOnly = true,
+                        enabled = true,
+                        modifier = Modifier.weight(1f)
+                    )
+                } else {
+                    Text(
+                        text = if (dateOfBirth.isEmpty()) "Date of Birth: Not set" else "Date of Birth: $dateOfBirth",
+                        style = MaterialTheme.typography.bodyLarge.copy(textAlign = TextAlign.Center, fontSize = 20.sp),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                // Text("Height:", fontSize = 18.sp)
+                // Spacer(modifier = Modifier.width(8.dp))
+
+                if (isEditMode) {
+                    OutlinedTextField(
+                        value = height,
+                        onValueChange = { height = it },
+                        label = { Text("Enter height") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        trailingIcon = { Text("cm") },
+                        modifier = Modifier.weight(1f)
+                    )
+                } else {
+                    Text(
+                        text = if (height.isEmpty()) "Height: Not set" else "Height: $height cm",
+                        style = MaterialTheme.typography.bodyLarge.copy(textAlign = TextAlign.Center, fontSize = 20.sp),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                // Text("Weight:", fontSize = 18.sp)
+                // Spacer(modifier = Modifier.width(8.dp))
+
+                if (isEditMode) {
+                    OutlinedTextField(
+                        value = weight,
+                        onValueChange = { weight = it },
+                        label = { Text("Enter weight") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        trailingIcon = { Text("kg") },
+                        modifier = Modifier.weight(1f)
+                    )
+                } else {
+                    Text(
+                        text = if (weight.isEmpty()) "Weight: Not set" else "Weight: $weight kg",
+                        style = MaterialTheme.typography.bodyLarge.copy(textAlign = TextAlign.Center, fontSize = 20.sp),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(onClick = {
+                if (isEditMode) {
+                    val heightValue = height.toIntOrNull()
+                    heightErrorMessage = ""
+
+                    when {
+                        heightValue == null -> {
+                            heightErrorMessage = "Invalid height input."
+                        }
+                        heightValue < 50 -> {
+                            heightErrorMessage = "Entered height is too small."
+                        }
+                        heightValue > 250 -> {
+                            heightErrorMessage = "Entered height is too big."
+                        }
+                        else -> {
+                            saveUserProfile(context, name, selectedGender, dateOfBirth, height, weight)
+                            isEditMode = false
+                            isDataChanged = false
+                        }
                     }
-                    heightValue < 50 -> {
-                        heightErrorMessage = "Entered height is too small."
-                    }
-                    heightValue > 250 -> {
-                        heightErrorMessage = "Entered height is too big."
-                    }
-                    else -> {
-                        saveUserProfile(context, name, selectedGender, dateOfBirth, height, weight)
-                        isDataChanged = false
-                        onBack()
-                    }
+                } else {
+                    isEditMode = true
                 }
             }) {
-                Text("Save")
+                Text(if (isEditMode) "Save" else "Edit")
             }
+
             if (heightErrorMessage.isNotEmpty()) {
                 Text(
                     text = heightErrorMessage,
