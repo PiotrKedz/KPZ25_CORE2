@@ -60,6 +60,12 @@ class MainActivity : ComponentActivity() {
     private val _temperatureOutside = mutableStateOf(0.0)
     private val _batteryLevel = mutableStateOf(0.0)
     private val _isPaused = mutableStateOf(false)
+    private val _isMonitoring = mutableStateOf(false) // New state for monitoring status
+
+    // Core temperature average tracking
+    private val _averageTemperatureCore = mutableStateOf(0.0)
+    private var tempCoreSamples = mutableListOf<Double>()
+    private var totalSamples = 0
 
 
 
@@ -208,6 +214,8 @@ class MainActivity : ComponentActivity() {
                 Log.d(TAG, "Disconnected from GATT server")
                 runOnUiThread {
                     _isConnected.value = false
+                    _isMonitoring.value = false // Reset monitoring state on disconnect
+                    _isPaused.value = false     // Reset pause state on disconnect
                 }
             }
         }
@@ -235,7 +243,9 @@ class MainActivity : ComponentActivity() {
             characteristic: BluetoothGattCharacteristic,
             value: ByteArray
         ) {
-            handleReceivedData(value)
+            if (_isMonitoring.value) {
+                handleReceivedData(value)
+            }
         }
 
         // Support for older Android versions
@@ -249,6 +259,11 @@ class MainActivity : ComponentActivity() {
                         Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
                     return
                 }
+            }
+            // Only process data if monitoring is active
+            if (_isMonitoring.value) {
+                val value = characteristic.value
+                handleReceivedData(value)
             }
         }
     }
@@ -310,14 +325,16 @@ class MainActivity : ComponentActivity() {
                 val temperatureCore = roundedTemperatureSkin + roundedTemperatureOutside
                 val roundedTemperatureCore = String.format("%.2f", temperatureCore).toDouble()
 
-
-
-                if (!_isPaused.value) {
+                // Only update UI if monitoring is active and not paused
+                if (_isMonitoring.value && !_isPaused.value) {
                     runOnUiThread {
                         _temperatureSkin.value = roundedTemperatureSkin
                         _temperatureOutside.value = roundedTemperatureOutside
                         _temperatureCore.value = roundedTemperatureCore
                         _batteryLevel.value = roundedBatteryLevel
+
+                        // Update running average for core temperature
+                        updateAverageTemperature(roundedTemperatureCore)
                     }
                 }
             } else {
@@ -328,7 +345,72 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun toggleMonitoring() {
+        _isMonitoring.value = !_isMonitoring.value
 
+        // If monitoring is being stopped, also reset the pause state
+        if (!_isMonitoring.value) {
+            _isPaused.value = false
+        } else {
+            // Reset average when starting a new monitoring session
+            resetAverageTemperature()
+        }
+
+        // Optionally provide user feedback
+        Toast.makeText(
+            this,
+            if (_isMonitoring.value) "Monitoring started" else "Monitoring stopped",
+            Toast.LENGTH_SHORT
+        ).show()
+    }
+
+    /**
+     * Updates the running average of core temperature
+     * Uses a cumulative moving average approach
+     */
+    private fun updateAverageTemperature(newValue: Double) {
+        if (newValue <= 0) return  // Skip invalid readings
+
+        tempCoreSamples.add(newValue)
+        totalSamples++
+
+        // Calculate running average
+        val sum = tempCoreSamples.sum()
+        _averageTemperatureCore.value = String.format("%.2f", sum / totalSamples).toDouble()
+
+
+        // Optionally, limit the number of samples stored to prevent excessive memory usage
+        // This is important for long monitoring sessions
+        if (tempCoreSamples.size > 100) {  // Keep only the most recent 100 samples
+            tempCoreSamples.removeAt(0)
+        }
+
+        Log.d(TAG, "Average core temp: ${_averageTemperatureCore.value}°C (from $totalSamples samples)")
+    }
+
+    /**
+     * Resets the temperature average calculation
+     */
+    private fun resetAverageTemperature() {
+        tempCoreSamples.clear()
+        totalSamples = 0
+        _averageTemperatureCore.value = 0.0
+        Log.d(TAG, "Average temperature tracking reset")
+    }
+
+    private fun togglePause() {
+        // Only allow pause/resume if monitoring is active
+        if (_isMonitoring.value) {
+            _isPaused.value = !_isPaused.value
+            Toast.makeText(
+                this,
+                if (_isPaused.value) "Monitoring paused" else "Monitoring resumed",
+                Toast.LENGTH_SHORT
+            ).show()
+        } else {
+            Toast.makeText(this, "Start monitoring first", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -347,6 +429,9 @@ class MainActivity : ComponentActivity() {
                         temperatureOutside = _temperatureOutside,
                         batteryLevel = _batteryLevel,
                         isPaused = _isPaused,
+                        isMonitoring = _isMonitoring,
+                        onPauseToggle = { togglePause() },
+                        onMonitoringToggle = { toggleMonitoring() },
                         onGoToProfile = {
                             val intent = Intent(this, ProfileActivity::class.java)
                             startActivity(intent)
@@ -376,18 +461,23 @@ class MainActivity : ComponentActivity() {
         temperatureOutside: State<Double>,
         batteryLevel: State<Double>,
         isPaused: State<Boolean>,
+        isMonitoring: State<Boolean>,
+        onPauseToggle: () -> Unit,
+        onMonitoringToggle: () -> Unit,
         onGoToProfile: () -> Unit,
         onGoToHistory: () -> Unit,
-        ) {
-
+    ) {
         HomeScreen(
             isConnected = isConnected.value,
             temperatureOutside = temperatureOutside.value,
             temperatureSkin = temperatureSkin.value,
             temperatureCore = temperatureCore.value,
+            averageTemperatureCore = _averageTemperatureCore.value,
             batteryLevel = batteryLevel.value,
             isPaused = isPaused.value,
-            onPauseToggle = { _isPaused.value = !_isPaused.value },
+            isMonitoring = isMonitoring.value,
+            onPauseToggle = onPauseToggle,
+            onMonitoringToggle = onMonitoringToggle,
             onGoToProfile = onGoToProfile,
             onGoToHistory = onGoToHistory,
         )
@@ -401,13 +491,15 @@ fun HomeScreen(
     temperatureCore: Double,
     temperatureSkin: Double,
     temperatureOutside: Double,
+    averageTemperatureCore: Double,
     batteryLevel: Double,
     isPaused: Boolean,
+    isMonitoring: Boolean,
     onPauseToggle: () -> Unit,
+    onMonitoringToggle: () -> Unit,
     onGoToProfile: () -> Unit,
     onGoToHistory: () -> Unit
 ) {
-
     val colors = MaterialTheme.colorScheme
     val tempColorSkin = when {
         temperatureSkin < 36.0 -> Blue
@@ -449,105 +541,159 @@ fun HomeScreen(
             )
         },
         content = { paddingValues ->
-    Box(
-        modifier = Modifier
-            .padding(paddingValues)
-            .fillMaxSize()
-            .background(colors.background)
-    ) {
-        Column(
-            modifier = Modifier.align(Alignment.Center),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "Device Status:",
-                color = colors.onBackground,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = if (isConnected) "Connected" else "Disconnected",
-                color = colors.onBackground,
-                fontSize = 20.sp
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Text(
-                text = "Battery Level:",
-                color = colors.onBackground,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = if (isConnected) "${batteryLevel}%" else "-",
-                color = colors.onBackground,
-                fontSize = 20.sp
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Text(
-                text = "Real-Time Temperature:",
-                color = colors.onBackground,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = if (!isConnected) "-" else if (isPaused) "Paused" else "${temperatureCore}°C",
-                color = tempColorCore,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-
-            // TEMP DEBUG HERE
-
-            Text(
-                text = "Sensor reading skin:",
-                color = colors.onBackground,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold
-            )
-
-            Text(
-                text = if (!isConnected) "-" else if (isPaused) "Paused" else "${temperatureSkin}°C",
-                color = tempColorSkin,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-            Text(
-                text = "Sensor reading outside:",
-                color = colors.onBackground,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold
-            )
-
-            Text(
-                text = if (!isConnected) "-" else if (isPaused) "Paused" else "${temperatureOutside}°C",
-                color = tempColorOutside,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-
-            if (isConnected) {
-                Spacer(modifier = Modifier.height(24.dp))
-                Button(
-                    onClick = onPauseToggle,
-                    colors = ButtonDefaults.buttonColors(containerColor = colors.primary),
-                    modifier = Modifier
-                        .padding(top = 16.dp)
-                        .defaultMinSize(minWidth = 120.dp)
+            Box(
+                modifier = Modifier
+                    .padding(paddingValues)
+                    .fillMaxSize()
+                    .background(colors.background)
+            ) {
+                Column(
+                    modifier = Modifier.align(Alignment.Center),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = if (isPaused) "Resume" else "Pause",
-                        color = colors.onPrimary
+                        text = "Device Status:",
+                        color = colors.onBackground,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold
                     )
+                    Text(
+                        text = if (isConnected) "Connected" else "Disconnected",
+                        color = colors.onBackground,
+                        fontSize = 20.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = "Battery Level:",
+                        color = colors.onBackground,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = if (isConnected) "${batteryLevel}%" else "-",
+                        color = colors.onBackground,
+                        fontSize = 20.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = "Real-Time Temperature:",
+                        color = colors.onBackground,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = if (!isConnected) "-"
+                        else if (!isMonitoring) "Monitoring Stopped"
+                        else if (isPaused) "Paused"
+                        else "${temperatureCore}°C",
+                        color = tempColorCore,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+
+                    // Display average core temperature when monitoring
+                    if (isConnected && isMonitoring) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Average Core Temperature:",
+                            color = colors.onBackground,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = if (averageTemperatureCore <= 0) "Calculating..."
+                            else "${averageTemperatureCore}°C",
+                            color = when {
+                                averageTemperatureCore < 36.0 -> Blue
+                                averageTemperatureCore > 38.0 -> Red
+                                else -> Green
+                            },
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+
+                    // TEMP DEBUG HERE
+                    Text(
+                        text = "Sensor reading skin:",
+                        color = colors.onBackground,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Text(
+                        text = if (!isConnected) "-"
+                        else if (!isMonitoring) "Monitoring Stopped"
+                        else if (isPaused) "Paused"
+                        else "${temperatureSkin}°C",
+                        color = tempColorSkin,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+
+                    Text(
+                        text = "Sensor reading outside:",
+                        color = colors.onBackground,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Text(
+                        text = if (!isConnected) "-"
+                        else if (!isMonitoring) "Monitoring Stopped"
+                        else if (isPaused) "Paused"
+                        else "${temperatureOutside}°C",
+                        color = tempColorOutside,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+
+                    if (isConnected) {
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        // Start/Stop Button
+                        Button(
+                            onClick = onMonitoringToggle,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (isMonitoring) Red else Green
+                            ),
+                            modifier = Modifier
+                                .padding(top = 16.dp)
+                                .defaultMinSize(minWidth = 120.dp)
+                        ) {
+                            Text(
+                                text = if (isMonitoring) "Stop" else "Start",
+                                color = colors.onPrimary
+                            )
+                        }
+
+                        // Pause Button (only enabled when monitoring is active)
+                        Button(
+                            onClick = onPauseToggle,
+                            enabled = isMonitoring,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = colors.primary,
+                                disabledContainerColor = colors.primary.copy(alpha = 0.5f)
+                            ),
+                            modifier = Modifier
+                                .padding(top = 8.dp)
+                                .defaultMinSize(minWidth = 120.dp)
+                        ) {
+                            Text(
+                                text = if (isPaused) "Resume" else "Pause",
+                                color = if (isMonitoring) colors.onPrimary
+                                else colors.onPrimary.copy(alpha = 0.5f)
+                            )
+                        }
+                    }
                 }
             }
-
         }
-    }
-})
+    )
 }
 
 @Preview(showBackground = true)
@@ -559,9 +705,12 @@ fun HomeScreenPreview() {
             temperatureCore = 36.2,
             temperatureSkin = 36.2,
             temperatureOutside = 36.2,
+            averageTemperatureCore = 36.4,
             batteryLevel = 75.0,
             isPaused = false,
+            isMonitoring = true,
             onPauseToggle = {},
+            onMonitoringToggle = {},
             onGoToProfile = {},
             onGoToHistory = {},
         )
