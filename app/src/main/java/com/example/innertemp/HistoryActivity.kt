@@ -39,6 +39,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.border
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.graphics.Color as ComposeColor
+
 
 class HistoryActivity : AppCompatActivity() {
     private lateinit var temperatureLogger: TemperatureLogger
@@ -77,6 +79,15 @@ fun HistoryScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text("Activity History")
+                    }
+                },
+                navigationIcon = {
+                    IconButton(onClick = {}) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowForward,
+                            contentDescription = null,
+                            tint = ComposeColor.Transparent
+                        )
                     }
                 },
                 actions = {

@@ -1,4 +1,4 @@
-#Tue Apr 29 19:17:39 CEST 2025
+#Tue Apr 29 19:32:11 CEST 2025
 base.0=C\:\\Users\\User\\Desktop\\KPZ25_CORE2-InnerTempv0.9\\app\\build\\intermediates\\dex\\debug\\mergeExtDexDebug\\classes.dex
 base.1=C\:\\Users\\User\\Desktop\\KPZ25_CORE2-InnerTempv0.9\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\0\\classes.dex
 base.2=C\:\\Users\\User\\Desktop\\KPZ25_CORE2-InnerTempv0.9\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\8\\classes.dex

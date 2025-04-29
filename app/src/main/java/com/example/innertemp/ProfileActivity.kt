@@ -32,6 +32,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import android.content.Context
+import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.ui.graphics.Color as ComposeColor
 
 
 class ProfileActivity : ComponentActivity() {
@@ -125,6 +127,15 @@ fun ProfileScreen(onBack: () -> Unit) {
                         modifier = Modifier.fillMaxWidth(),
                         textAlign = TextAlign.Center
                     )
+                },
+                actions = {
+                    IconButton(onClick = {}) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowForward,
+                            contentDescription = null,
+                            tint = ComposeColor.Transparent
+                        )
+                    }
                 },
                 navigationIcon = {
                     IconButton(onClick = {
