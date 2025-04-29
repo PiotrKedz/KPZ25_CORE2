@@ -189,12 +189,12 @@ fun ProfileScreen(onBack: () -> Unit) {
                 if (isEditMode) {
                     ExposedDropdownMenuBox(
                         expanded = genderExpanded,
-                        onExpandedChange = { genderExpanded = !it },
+                        onExpandedChange = { genderExpanded = it },
                         modifier = Modifier.weight(1f)
                     ) {
                         OutlinedTextField(
                             value = selectedGender,
-                            onValueChange = {isDataChanged = true },
+                            onValueChange = {},
                             label = { Text("Select gender") },
                             readOnly = true,
                             trailingIcon = {
@@ -202,6 +202,7 @@ fun ProfileScreen(onBack: () -> Unit) {
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .menuAnchor()
                                 .clickable { genderExpanded = !genderExpanded }
                         )
 
@@ -212,14 +213,17 @@ fun ProfileScreen(onBack: () -> Unit) {
                             DropdownMenuItem(text = { Text("Male") }, onClick = {
                                 selectedGender = "Male"
                                 genderExpanded = false
+                                isDataChanged = true
                             })
                             DropdownMenuItem(text = { Text("Female") }, onClick = {
                                 selectedGender = "Female"
                                 genderExpanded = false
+                                isDataChanged = true
                             })
                             DropdownMenuItem(text = { Text("Other") }, onClick = {
                                 selectedGender = "Other"
                                 genderExpanded = false
+                                isDataChanged = true
                             })
                         }
                     }
