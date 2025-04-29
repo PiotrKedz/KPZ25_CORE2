@@ -4,6 +4,9 @@ import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.background
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -28,17 +31,31 @@ import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.components.YAxis
 import com.github.mikephil.charting.formatter.ValueFormatter
 import java.util.concurrent.TimeUnit
-
-
+import kotlinx.coroutines.*
+import java.text.SimpleDateFormat
+import java.util.*
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.foundation.border
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.clickable
 
 class HistoryActivity : AppCompatActivity() {
+    private lateinit var temperatureLogger: TemperatureLogger
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         supportActionBar?.hide()
 
+        // Initialize the temperature logger
+        temperatureLogger = TemperatureLogger(this)
+
         setContent {
             InnerTempTheme {
-                HistoryScreen(onBack = { finish() })
+                HistoryScreen(
+                    onBack = { finish() },
+                    temperatureLogger = temperatureLogger
+                )
             }
         }
     }
@@ -46,7 +63,10 @@ class HistoryActivity : AppCompatActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HistoryScreen(onBack: () -> Unit) {
+fun HistoryScreen(
+    onBack: () -> Unit,
+    temperatureLogger: TemperatureLogger
+) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -68,167 +88,385 @@ fun HistoryScreen(onBack: () -> Unit) {
                     }
                 }
             )
-        },
-        content = { innerPadding ->
-            HistoryContent(modifier = Modifier.padding(innerPadding))
         }
-    )
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .padding(innerPadding)
+                .fillMaxSize()
+        ) {
+            HistoryContent(
+                modifier = Modifier.fillMaxSize(),
+                temperatureLogger = temperatureLogger
+            )
+        }
+    }
 }
 
 @Composable
-fun HistoryContent(modifier: Modifier) {
+fun HistoryContent(
+    modifier: Modifier,
+    temperatureLogger: TemperatureLogger
+) {
     // Get current month and year
-    val currentMonth = LocalDate.now().month
-    val currentYear = LocalDate.now().year
-    val daysInMonth = currentMonth.length(LocalDate.of(currentYear, currentMonth, 1).isLeapYear)
-    val firstDayOfMonth = LocalDate.of(currentYear, currentMonth, 1).dayOfWeek.ordinal
+    val currentDate = LocalDate.now()
+    var selectedMonth by remember { mutableStateOf(currentDate.monthValue) }
+    var selectedYear by remember { mutableStateOf(currentDate.year) }
 
-    // Simulate historical data for each day
-    val dayData = remember {
-        mutableStateOf<Map<Int, String>>(mapOf(
-            1 to "Lowest Temperature: 21°C, Highest Temperature: 23°C, Average Temperature: 22°C, Activity: Running",
-            5 to "Lowest Temperature: 21°C, Highest Temperature: 23°C, Average Temperature: 22°C, Activity: Walking",
-            10 to "Lowest Temperature: 21°C, Highest Temperature: 23°C, Average Temperature: 22°C, Activity: Cycling",
-            15 to "Lowest Temperature: 21°C, Highest Temperature: 23°C, Average Temperature: 22°C, Activity: Yoga",
-            20 to "Lowest Temperature: 21°C, Highest Temperature: 23°C, Average Temperature: 22°C, Activity: Jogging"
-        ))
+    // Get days in the selected month
+    val localDate = LocalDate.of(selectedYear, selectedMonth, 1)
+    val daysInMonth = localDate.month.length(localDate.isLeapYear)
+    val firstDayOfMonth = localDate.dayOfWeek.value % 7  // Sunday = 0, Monday = 1, etc.
+
+    // Get data for days with temperature readings
+    val daysWithData = remember(selectedMonth, selectedYear) {
+        temperatureLogger.getDaysWithDataInMonth(selectedYear, selectedMonth).toList()
     }
 
     var selectedDay by remember { mutableStateOf<Int?>(null) }
+    var selectedDayData by remember { mutableStateOf<List<TemperatureEntry>?>(null) }
+    var selectedDayStats by remember { mutableStateOf<TemperatureStats?>(null) }
+
+    // Update selected day data when day changes
+    LaunchedEffect(selectedDay, selectedMonth, selectedYear) {
+        selectedDay?.let { day ->
+            selectedDayData =
+                temperatureLogger.getTemperatureDataForDate(selectedYear, selectedMonth, day)
+            selectedDayStats =
+                temperatureLogger.getTemperatureStatsForDate(selectedYear, selectedMonth, day)
+        }
+    }
 
     Column(
-        modifier = modifier.fillMaxSize().padding(16.dp)
+        modifier = modifier.padding(16.dp)
     ) {
-        // Header for current month and year
-        Text(
-            text = "$currentMonth $currentYear",
-            style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.align(Alignment.CenterHorizontally)
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Create grid for days of the month
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(7),
-            modifier = Modifier.fillMaxWidth()
+        // Header for month and year navigation (not scrollable)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // Add empty spaces before the first day of the month
-            items(firstDayOfMonth + daysInMonth) { index ->
-                if (index < firstDayOfMonth) {
-                    // Empty space — matches day size for alignment
-                    Box(
-                        modifier = Modifier
-                            .padding(4.dp)
-                            .width(40.dp)
-                            .height(40.dp)
-                    )
+            IconButton(onClick = {
+                if (selectedMonth == 1) {
+                    selectedMonth = 12
+                    selectedYear--
                 } else {
-                    val day = index - firstDayOfMonth + 1
-                    DayCell(day = day, onClick = {
-                        selectedDay = day
-                    })
+                    selectedMonth--
                 }
+                selectedDay = null
+                selectedDayData = null
+                selectedDayStats = null
+            }) {
+                Text("<", style = MaterialTheme.typography.titleLarge)
+            }
+
+            Text(
+                text = "${Month.of(selectedMonth).name} $selectedYear",
+                style = MaterialTheme.typography.titleLarge
+            )
+
+            IconButton(onClick = {
+                if (selectedMonth == 12) {
+                    selectedMonth = 1
+                    selectedYear++
+                } else {
+                    selectedMonth++
+                }
+                selectedDay = null
+                selectedDayData = null
+                selectedDayStats = null
+            }) {
+                Text(">", style = MaterialTheme.typography.titleLarge)
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        val temperatureData = remember {
-            mutableStateOf(listOf(
-                Entry(0f, 36.5f),
-                Entry(11.4f, 37.2f),
-                Entry(22.8f, 38.1f),
-                Entry(34.2f, 38.7f),
-                Entry(45.6f, 37.5f),
-                Entry(57f, 36.8f)
-            ))
-        }
+        // Scrollable content
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+        ) {
+            // Days of week header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                val daysOfWeek = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
+                daysOfWeek.forEach { day ->
+                    Text(
+                        text = day,
+                        modifier = Modifier.weight(1f),
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
 
-        AndroidView(
-            factory = { context ->
-                LineChart(context).apply {
-                    val dataSet = LineDataSet(temperatureData.value, "Temperatura (°C)")
-                    dataSet.color = Color.BLUE
-                    dataSet.valueTextColor = Color.BLACK
-                    dataSet.setDrawCircles(false)
-                    dataSet.lineWidth = 2f
+            Spacer(modifier = Modifier.height(8.dp))
 
-                    data = LineData(dataSet)
+            // Create grid for days of the month
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(7),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(((daysInMonth / 7 + 1) * 48).dp),
+                userScrollEnabled = false
+            ) {
+                // Add empty spaces before the first day of the month
+                items(firstDayOfMonth + daysInMonth) { index ->
+                    if (index < firstDayOfMonth) {
+                        // Empty space for alignment
+                        Box(
+                            modifier = Modifier
+                                .padding(4.dp)
+                                .aspectRatio(1f)
+                        )
+                    } else {
+                        val day = index - firstDayOfMonth + 1
+                        val hasData = day in daysWithData
+                        val isSelectedDay = selectedDay == day
 
-                    xAxis.apply {
-                        position = XAxis.XAxisPosition.BOTTOM
-                        axisMinimum = 0f
-                        axisMaximum = 57f
-                        granularity = 5f
-                        valueFormatter = object : ValueFormatter() {
-                            override fun getFormattedValue(value: Float): String {
-                                return "${value.toInt()} min"
+                        DayCell(
+                            day = day,
+                            hasData = hasData,
+                            isSelected = isSelectedDay,
+                            onClick = {
+                                selectedDay = if (isSelectedDay) null else day
+                            }
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Show temperature chart and details for selected day
+            selectedDay?.let { day ->
+                val tempData = selectedDayData
+                if (tempData != null && tempData.isNotEmpty()) {
+                    // Display temperature chart
+                    Text(
+                        text = "Temperature Data for ${Month.of(selectedMonth).name} $day, $selectedYear",
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    TemperatureChart(
+                        temperatureEntries = tempData,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                            .padding(vertical = 8.dp)
+                    )
+
+                    // Display temperature statistics
+                    selectedDayStats?.let { stats ->
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp)
+                            ) {
+                                Text(
+                                    text = "Temperature Statistics",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Column {
+                                        Text(
+                                            text = "Lowest",
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+                                        Text(
+                                            text = String.format("%.1f°C", stats.lowest),
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            color = androidx.compose.ui.graphics.Color.Blue
+                                        )
+                                    }
+
+                                    Column {
+                                        Text(
+                                            text = "Average",
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+                                        Text(
+                                            text = String.format("%.1f°C", stats.average),
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            color = androidx.compose.ui.graphics.Color.Green
+                                        )
+                                    }
+
+                                    Column {
+                                        Text(
+                                            text = "Highest",
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+                                        Text(
+                                            text = String.format("%.1f°C", stats.highest),
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            color = androidx.compose.ui.graphics.Color.Red
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                Text(
+                                    text = "Total readings: ${stats.count}",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
                             }
                         }
-                        setDrawGridLines(false)
                     }
-
-
-                    axisLeft.apply {
-                        axisMaximum = 40f
-                        granularity = 2f
-                        setDrawGridLines(true)
-                    }
-                    axisRight.isEnabled = false
-
-                    description.isEnabled = false
-                    legend.isEnabled = false
-                    invalidate()
+                } else {
+                    // No data available for selected day
+                    Text(
+                        text = "No temperature data available for ${Month.of(selectedMonth).name} $day, $selectedYear",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(vertical = 16.dp)
+                    )
                 }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp)
-                .padding(vertical = 16.dp)
-        )
-
-        // Show the data for the selected day
-        if (selectedDay != null) {
-            val dataForSelectedDay = dayData.value[selectedDay]
-            if (dataForSelectedDay != null) {
+            } ?: run {
+                // No day selected
                 Text(
-                    text = "Data for day $selectedDay: $dataForSelectedDay",
+                    text = "Select a day to view temperature data",
                     style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                )
-            } else {
-                Text(
-                    text = "No data available for day $selectedDay",
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                    modifier = Modifier
+                        .padding(vertical = 16.dp)
+                        .fillMaxWidth(),
+                    textAlign = TextAlign.Center
                 )
             }
+
+            // Add bottom padding to ensure content at the bottom is visible when scrolled
+            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }
 
+/**
+ * DayCell component for displaying individual calendar days
+ */
 @Composable
-fun DayCell(day: Int, onClick: (Int) -> Unit) {
-    Button(
-        onClick = { onClick(day) },
+fun DayCell(
+    day: Int,
+    hasData: Boolean,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Box(
         modifier = Modifier
             .padding(4.dp)
-            .size(40.dp),
-        shape = CircleShape,
-        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+            .aspectRatio(1f)
+            .background(
+                color = when {
+                    isSelected -> MaterialTheme.colorScheme.primaryContainer
+                    hasData -> MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
+                    else -> androidx.compose.ui.graphics.Color.Transparent
+                },
+                shape = CircleShape
+            )
+            .border(
+                width = if (isSelected) 2.dp else 0.dp,
+                color = if (isSelected) MaterialTheme.colorScheme.primary else androidx.compose.ui.graphics.Color.Transparent,
+                shape = CircleShape
+            )
+            .clickable(enabled = hasData, onClick = onClick),
+        contentAlignment = Alignment.Center
     ) {
         Text(
             text = day.toString(),
-            color = androidx.compose.ui.graphics.Color.White // Or use: MaterialTheme.colorScheme.onPrimary
+            style = MaterialTheme.typography.bodyMedium,
+            color = when {
+                isSelected -> MaterialTheme.colorScheme.onPrimaryContainer
+                hasData -> MaterialTheme.colorScheme.onSecondaryContainer
+                else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            }
         )
     }
 }
 
-@Preview(showBackground = true)
+/**
+ * TemperatureChart component for visualizing temperature data
+ */
 @Composable
-fun PreviewHistoryScreen() {
-    InnerTempTheme {
-        HistoryScreen(onBack = {})
-    }
+fun TemperatureChart(
+    temperatureEntries: List<TemperatureEntry>,
+    modifier: Modifier = Modifier
+) {
+    AndroidView(
+        modifier = modifier,
+        factory = { context ->
+            LineChart(context).apply {
+                description.isEnabled = false
+                legend.isEnabled = true
+                setTouchEnabled(true)
+                setScaleEnabled(true)
+                setPinchZoom(true)
+                setDrawGridBackground(false)
+
+                // Configure axes
+                xAxis.apply {
+                    position = XAxis.XAxisPosition.BOTTOM
+                    setDrawGridLines(false)
+                    granularity = 1f
+                    labelCount = 5
+                    valueFormatter = object : ValueFormatter() {
+                        override fun getFormattedValue(value: Float): String {
+                            // Time is already formatted as a string in our TemperatureEntry
+                            return temperatureEntries.getOrNull(value.toInt())?.time ?: ""
+                        }
+                    }
+                }
+
+                axisLeft.apply {
+                    setDrawGridLines(true)
+                    granularity = 0.5f
+                    axisMinimum = 35f  // Minimum temperature
+                    axisMaximum = 42f  // Maximum temperature
+                }
+
+                axisRight.isEnabled = false
+            }
+        },
+        update = { chart ->
+            // Create entries with index as X and temperature as Y
+            val entries = temperatureEntries.mapIndexed { index, entry ->
+                Entry(index.toFloat(), entry.temperature.toFloat())
+            }
+
+            val dataSet = LineDataSet(entries, "Temperature (°C)").apply {
+                color = androidx.compose.ui.graphics.Color.Blue.toArgb()
+                setCircleColor(androidx.compose.ui.graphics.Color.Blue.toArgb())
+                lineWidth = 2f
+                circleRadius = 3f
+                setDrawValues(false)
+                mode = LineDataSet.Mode.CUBIC_BEZIER
+                cubicIntensity = 0.2f
+
+                // Fill color under the line
+                setDrawFilled(true)
+                fillColor = androidx.compose.ui.graphics.Color.Blue.copy(alpha = 0.3f).toArgb()
+            }
+
+            val lineData = LineData(dataSet)
+            chart.data = lineData
+            chart.invalidate() // Refresh chart
+        }
+    )
 }
