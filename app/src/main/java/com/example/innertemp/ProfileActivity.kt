@@ -84,6 +84,8 @@ fun ProfileScreen(onBack: () -> Unit) {
     var heightErrorMessage by remember { mutableStateOf("") }
     var showExitDialog by remember { mutableStateOf(false) }
     var isEditMode by remember { mutableStateOf(false) }
+    var athleticLevel by remember { mutableStateOf("") }
+    var athleticLevelExpanded by remember { mutableStateOf(false) }
 
 
 
@@ -96,6 +98,8 @@ fun ProfileScreen(onBack: () -> Unit) {
         dateOfBirth = sharedPref.getString("dob", "") ?: ""
         height = sharedPref.getString("height", "") ?: ""
         weight = sharedPref.getString("weight", "") ?: ""
+        athleticLevel = sharedPref.getString("athletic_level", "") ?: ""
+
     }
 
     fun saveUserProfile(
@@ -104,7 +108,8 @@ fun ProfileScreen(onBack: () -> Unit) {
         gender: String,
         dateOfBirth: String,
         height: String,
-        weight: String
+        weight: String,
+        athleticLevel: String
     ) {
         val sharedPref = context.getSharedPreferences("user_profile", Context.MODE_PRIVATE)
         with(sharedPref.edit()) {
@@ -113,6 +118,7 @@ fun ProfileScreen(onBack: () -> Unit) {
             putString("dob", dateOfBirth)
             putString("height", height)
             putString("weight", weight)
+            putString("athletic_level", athleticLevel)
             apply()
         }
     }
@@ -317,6 +323,59 @@ fun ProfileScreen(onBack: () -> Unit) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                if (isEditMode) {
+                    ExposedDropdownMenuBox(
+                        expanded = athleticLevelExpanded,
+                        onExpandedChange = { athleticLevelExpanded = it },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        OutlinedTextField(
+                            value = athleticLevel,
+                            onValueChange = {},
+                            label = { Text("Select athletic level") },
+                            readOnly = true,
+                            trailingIcon = {
+                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = athleticLevelExpanded)
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor()
+                                .clickable { athleticLevelExpanded = !athleticLevelExpanded }
+                        )
+
+                        ExposedDropdownMenu(
+                            expanded = athleticLevelExpanded,
+                            onDismissRequest = { athleticLevelExpanded = false }
+                        ) {
+                            DropdownMenuItem(text = { Text("Low") }, onClick = {
+                                athleticLevel = "Low"
+                                athleticLevelExpanded = false
+                                isDataChanged = true
+                            })
+                            DropdownMenuItem(text = { Text("Medium") }, onClick = {
+                                athleticLevel = "Medium"
+                                athleticLevelExpanded = false
+                                isDataChanged = true
+                            })
+                            DropdownMenuItem(text = { Text("High") }, onClick = {
+                                athleticLevel = "High"
+                                athleticLevelExpanded = false
+                                isDataChanged = true
+                            })
+                        }
+                    }
+                } else {
+                    Text(
+                        text = if (athleticLevel.isEmpty()) "Athletic Level: Not set" else "Athletic Level: $athleticLevel",
+                        style = MaterialTheme.typography.bodyLarge.copy(textAlign = TextAlign.Center, fontSize = 20.sp),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             Button(onClick = {
                 if (isEditMode) {
                     heightErrorMessage = ""
@@ -331,7 +390,7 @@ fun ProfileScreen(onBack: () -> Unit) {
                     }
 
                     if (heightErrorMessage.isEmpty()) {
-                        saveUserProfile(context, name, selectedGender, dateOfBirth, height, weight)
+                        saveUserProfile(context, name, selectedGender, dateOfBirth, height, weight, athleticLevel)
                         isEditMode = false
                         isDataChanged = false
                     }
