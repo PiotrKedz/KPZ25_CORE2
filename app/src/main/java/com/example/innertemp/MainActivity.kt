@@ -32,11 +32,14 @@ import com.example.innertemp.ui.theme.Blue
 import com.example.innertemp.ui.theme.Green
 import com.example.innertemp.ui.theme.InnerTempTheme
 import com.example.innertemp.ui.theme.Red
+import java.text.SimpleDateFormat
+import java.util.*
 
 private const val TAG = "InnerTemp"
 
 class MainActivity : ComponentActivity() {
     private lateinit var bluetoothManager: BluetoothManager
+    private lateinit var temperatureLogger: TemperatureLogger // Add TemperatureLogger
     private val _isConnected = mutableStateOf(false)
     private val _temperatureCore = mutableStateOf(0.0)
     private val _temperatureSkin = mutableStateOf(0.0)
@@ -76,6 +79,7 @@ class MainActivity : ComponentActivity() {
             val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
             enableBtLauncher.launch(enableBtIntent)
         } else {
+            Log.d(TAG, "Starting BLE scan...")
             bluetoothManager.startBleScan()
         }
     }
@@ -116,10 +120,9 @@ class MainActivity : ComponentActivity() {
 
         // Calculate running average
         val sum = tempCoreSamples.sum()
-        _averageTemperatureCore.value = String.format("%.2f", sum / totalSamples).toDouble()
+        _averageTemperatureCore.value = String.format("%.1f", sum / totalSamples).toDouble()
 
         // Optionally, limit the number of samples stored to prevent excessive memory usage
-        // This is important for long monitoring sessions
         if (tempCoreSamples.size > 100) {  // Keep only the most recent 100 samples
             tempCoreSamples.removeAt(0)
         }
@@ -141,33 +144,48 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        // Initialize the temperature logger
+        temperatureLogger = TemperatureLogger(this)
+
         // Initialize the Bluetooth manager
         bluetoothManager = BluetoothManager(this)
 
-        // Set up callbacks
+        // Set up callbacks with additional logging
         bluetoothManager.setOnConnectionStatusChanged { isConnected ->
+            Log.d(TAG, "Connection status changed: $isConnected")
             _isConnected.value = isConnected
         }
 
         bluetoothManager.setOnMonitoringStatusChanged { isMonitoring ->
+            Log.d(TAG, "Monitoring status changed: $isMonitoring")
             _isMonitoring.value = isMonitoring
             if (isMonitoring) {
+                // Start a new logging session when monitoring begins
+                temperatureLogger.startNewSession()
                 resetAverageTemperature()
             }
         }
 
         bluetoothManager.setOnPauseStatusChanged { isPaused ->
+            Log.d(TAG, "Pause status changed: $isPaused")
             _isPaused.value = isPaused
         }
 
         bluetoothManager.setOnDataReceived { tempSkin, tempOutside, tempCore, battery ->
+            Log.d(TAG, "Received data - Core: $tempCore, Skin: $tempSkin, Outside: $tempOutside, Battery: $battery")
+
             _temperatureSkin.value = tempSkin
             _temperatureOutside.value = tempOutside
             _temperatureCore.value = tempCore
             _batteryLevel.value = battery
 
-            // Update running average for core temperature
-            updateAverageTemperature(tempCore)
+            // Update running average for core temperature if we're monitoring and not paused
+            if (_isMonitoring.value && !_isPaused.value && tempCore > 0) {
+                updateAverageTemperature(tempCore)
+
+                // Log the temperature to the file system
+                temperatureLogger.logTemperature(tempCore)
+            }
         }
 
         setContent {
@@ -185,6 +203,7 @@ class MainActivity : ComponentActivity() {
                         isPaused = _isPaused,
                         isMonitoring = _isMonitoring,
                         onPauseToggle = {
+                            Log.d(TAG, "User requested pause toggle")
                             bluetoothManager.togglePause()
                             Toast.makeText(
                                 this,
@@ -193,6 +212,7 @@ class MainActivity : ComponentActivity() {
                             ).show()
                         },
                         onMonitoringToggle = {
+                            Log.d(TAG, "User requested monitoring toggle")
                             bluetoothManager.toggleMonitoring()
                             Toast.makeText(
                                 this,
@@ -288,6 +308,12 @@ fun HomeScreen(
         else -> Green
     }
 
+    // Get current date for UI display
+    val currentDateStr = remember {
+        val dateFormat = SimpleDateFormat("dd MMMM yyyy", Locale.getDefault())
+        dateFormat.format(Date())
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -318,9 +344,20 @@ fun HomeScreen(
                     .background(colors.background)
             ) {
                 Column(
-                    modifier = Modifier.align(Alignment.Center),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    // Show current date
+                    Text(
+                        text = currentDateStr,
+                        color = colors.onBackground,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Normal,
+                        modifier = Modifier.padding(bottom = 24.dp)
+                    )
+
                     Text(
                         text = "Device Status:",
                         color = colors.onBackground,
@@ -333,7 +370,7 @@ fun HomeScreen(
                         fontSize = 20.sp
                     )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     Text(
                         text = "Battery Level:",
@@ -347,7 +384,7 @@ fun HomeScreen(
                         fontSize = 20.sp
                     )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
 
                     Text(
                         text = "Real-Time Temperature:",
@@ -359,105 +396,99 @@ fun HomeScreen(
                         text = if (!isConnected) "-"
                         else if (!isMonitoring) "Monitoring Stopped"
                         else if (isPaused) "Paused"
-                        else "${temperatureCore}°C",
+                        else String.format("%.1f°C", temperatureCore),
                         color = tempColorCore,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.SemiBold
+                        fontSize = 36.sp,
+                        fontWeight = FontWeight.Bold
                     )
 
                     // Display average core temperature when monitoring
                     if (isConnected && isMonitoring) {
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
                         Text(
                             text = "Average Core Temperature:",
                             color = colors.onBackground,
-                            fontSize = 16.sp,
+                            fontSize = 20.sp,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
                             text = if (averageTemperatureCore <= 0) "Calculating..."
-                            else "${averageTemperatureCore}°C",
+                            else String.format("%.1f°C", averageTemperatureCore),
                             color = when {
                                 averageTemperatureCore < 36.0 -> Blue
                                 averageTemperatureCore > 38.0 -> Red
                                 else -> Green
                             },
-                            fontSize = 16.sp,
+                            fontSize = 28.sp,
                             fontWeight = FontWeight.SemiBold
                         )
                     }
 
-                    // TEMP DEBUG HERE
+                    // Debug sensor readings
+                    Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "Sensor reading skin:",
+                        text = "Debug Sensor Readings",
                         color = colors.onBackground,
-                        fontSize = 10.sp,
+                        fontSize = 14.sp,
                         fontWeight = FontWeight.Bold
                     )
 
                     Text(
-                        text = if (!isConnected) "-"
-                        else if (!isMonitoring) "Monitoring Stopped"
-                        else if (isPaused) "Paused"
-                        else "${temperatureSkin}°C",
-                        color = tempColorSkin,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.SemiBold
+                        text = "Skin: ${String.format("%.1f°C", temperatureSkin)} | " +
+                                "Outside: ${String.format("%.1f°C", temperatureOutside)}",
+                        color = colors.onBackground.copy(alpha = 0.7f),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Normal
                     )
 
-                    Text(
-                        text = "Sensor reading outside:",
-                        color = colors.onBackground,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    Text(
-                        text = if (!isConnected) "-"
-                        else if (!isMonitoring) "Monitoring Stopped"
-                        else if (isPaused) "Paused"
-                        else "${temperatureOutside}°C",
-                        color = tempColorOutside,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                    Spacer(modifier = Modifier.weight(1f))  // Push buttons toward the bottom
 
                     if (isConnected) {
-                        Spacer(modifier = Modifier.height(24.dp))
-
-                        // Start/Stop Button
-                        Button(
-                            onClick = onMonitoringToggle,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (isMonitoring) Red else Green
-                            ),
+                        // Action buttons
+                        Row(
                             modifier = Modifier
-                                .padding(top = 16.dp)
-                                .defaultMinSize(minWidth = 120.dp)
+                                .fillMaxWidth()
+                                .padding(bottom = 24.dp),
+                            horizontalArrangement = Arrangement.SpaceEvenly
                         ) {
-                            Text(
-                                text = if (isMonitoring) "Stop" else "Start",
-                                color = colors.onPrimary
-                            )
-                        }
+                            // Start/Stop Button
+                            Button(
+                                onClick = onMonitoringToggle,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (isMonitoring) Red else Green
+                                ),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(end = 8.dp)
+                                    .height(56.dp)
+                            ) {
+                                Text(
+                                    text = if (isMonitoring) "Stop" else "Start",
+                                    color = colors.onPrimary,
+                                    fontSize = 18.sp
+                                )
+                            }
 
-                        // Pause Button (only enabled when monitoring is active)
-                        Button(
-                            onClick = onPauseToggle,
-                            enabled = isMonitoring,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = colors.primary,
-                                disabledContainerColor = colors.primary.copy(alpha = 0.5f)
-                            ),
-                            modifier = Modifier
-                                .padding(top = 8.dp)
-                                .defaultMinSize(minWidth = 120.dp)
-                        ) {
-                            Text(
-                                text = if (isPaused) "Resume" else "Pause",
-                                color = if (isMonitoring) colors.onPrimary
-                                else colors.onPrimary.copy(alpha = 0.5f)
-                            )
+                            // Pause Button (only enabled when monitoring is active)
+                            Button(
+                                onClick = onPauseToggle,
+                                enabled = isMonitoring,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = colors.primary,
+                                    disabledContainerColor = colors.primary.copy(alpha = 0.5f)
+                                ),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(start = 8.dp)
+                                    .height(56.dp)
+                            ) {
+                                Text(
+                                    text = if (isPaused) "Resume" else "Pause",
+                                    color = if (isMonitoring) colors.onPrimary
+                                    else colors.onPrimary.copy(alpha = 0.5f),
+                                    fontSize = 18.sp
+                                )
+                            }
                         }
                     }
                 }
