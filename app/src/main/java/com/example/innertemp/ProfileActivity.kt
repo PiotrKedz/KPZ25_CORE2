@@ -70,7 +70,7 @@ fun ProfileScreen(onBack: () -> Unit) {
     val day = calendar.get(Calendar.DAY_OF_MONTH)
     var isDataChanged by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
-
+    
     val datePickerDialog = remember {
         DatePickerDialog(
             context,
@@ -171,11 +171,12 @@ fun ProfileScreen(onBack: () -> Unit) {
                     )
                 },
                 actions = {
-                    IconButton(onClick = {}) {
+                    IconButton(onClick = {
+                        context.startActivity(android.content.Intent(context, SettingsActivity::class.java))
+                    }) {
                         Icon(
-                            imageVector = Icons.Default.ArrowForward,
-                            contentDescription = null,
-                            tint = ComposeColor.Transparent
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "Settings"
                         )
                     }
                 },
@@ -576,7 +577,7 @@ fun ProfileScreen(onBack: () -> Unit) {
                         if (dateOfBirth.isEmpty()) {
                             dobErrorMessage = "Date of birth is required."
                         } else if (!validateDateOfBirth(dateOfBirth)) {
-                            dobErrorMessage = "Date of birth must be at least 1 year ago."
+                            dobErrorMessage = "Date of birth must be at least 1 year ago and not in the future."
                         }
 
                         if (nameErrorMessage.isEmpty() && heightErrorMessage.isEmpty() &&
