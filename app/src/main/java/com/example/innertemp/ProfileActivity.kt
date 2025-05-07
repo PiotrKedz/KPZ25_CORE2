@@ -69,6 +69,7 @@ fun ProfileScreen(onBack: () -> Unit) {
     val month = calendar.get(Calendar.MONTH)
     val day = calendar.get(Calendar.DAY_OF_MONTH)
     var isDataChanged by remember { mutableStateOf(false) }
+    val scrollState = rememberScrollState()
 
     val datePickerDialog = remember {
         DatePickerDialog(
@@ -80,7 +81,9 @@ fun ProfileScreen(onBack: () -> Unit) {
             year,
             month,
             day
-        )
+        ).apply {
+            datePicker.maxDate = Calendar.getInstance().timeInMillis
+        }
     }
 
     var height by remember { mutableStateOf("") }
@@ -194,6 +197,7 @@ fun ProfileScreen(onBack: () -> Unit) {
             modifier = Modifier
                 .padding(paddingValues)
                 .fillMaxSize()
+                .verticalScroll(scrollState)
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -223,7 +227,12 @@ fun ProfileScreen(onBack: () -> Unit) {
 
                         OutlinedTextField(
                             value = name,
-                            onValueChange = { name = it; isDataChanged = true },
+                            onValueChange = {
+                                if (it.length <= 20) {
+                                    name = it
+                                    isDataChanged = true
+                                }
+                            },
                             label = { Text("Enter your name") },
                             modifier = Modifier.fillMaxWidth(),
                             leadingIcon = {
@@ -232,7 +241,10 @@ fun ProfileScreen(onBack: () -> Unit) {
                                     contentDescription = "Name"
                                 )
                             },
-                            isError = nameErrorMessage.isNotEmpty()
+                            isError = nameErrorMessage.isNotEmpty(),
+                            supportingText = {
+                                Text("${name.length}/20 characters")
+                            }
                         )
                         if (nameErrorMessage.isNotEmpty()) {
                             Text(
@@ -375,7 +387,12 @@ fun ProfileScreen(onBack: () -> Unit) {
                     if (isEditMode) {
                         OutlinedTextField(
                             value = height,
-                            onValueChange = { height = it; isDataChanged = true },
+                            onValueChange = { newText ->
+                                if (newText.all { it.isDigit() } && newText.length <= 3) {
+                                    height = newText
+                                    isDataChanged = true
+                                }
+                            },
                             label = { Text("Enter height") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             leadingIcon = {
@@ -409,7 +426,12 @@ fun ProfileScreen(onBack: () -> Unit) {
                     if (isEditMode) {
                         OutlinedTextField(
                             value = weight,
-                            onValueChange = { weight = it; isDataChanged = true },
+                            onValueChange = { newText ->
+                                if (newText.all { it.isDigit() } && newText.length <= 3) {
+                                    weight = newText
+                                    isDataChanged = true
+                                }
+                            },
                             label = { Text("Enter weight") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             leadingIcon = {
@@ -439,7 +461,7 @@ fun ProfileScreen(onBack: () -> Unit) {
                     }
                 }
             }
-            
+
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -554,7 +576,7 @@ fun ProfileScreen(onBack: () -> Unit) {
                         if (dateOfBirth.isEmpty()) {
                             dobErrorMessage = "Date of birth is required."
                         } else if (!validateDateOfBirth(dateOfBirth)) {
-                            dobErrorMessage = "Date of birth must be at least 1 year ago and not in the future."
+                            dobErrorMessage = "Date of birth must be at least 1 year ago."
                         }
 
                         if (nameErrorMessage.isEmpty() && heightErrorMessage.isEmpty() &&
@@ -586,6 +608,8 @@ fun ProfileScreen(onBack: () -> Unit) {
                     fontSize = 16.sp
                 )
             }
+
+            Spacer(modifier = Modifier.height(24.dp))
 
             if (showExitDialog) {
                 AlertDialog(
