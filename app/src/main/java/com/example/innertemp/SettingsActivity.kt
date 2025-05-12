@@ -104,7 +104,7 @@ fun SettingsScreen(onBack: () -> Unit, onThemeChanged: () -> Unit) {
                     }
                 },
                 actions = {
-                    IconButton(onClick = { /* Do nothing */ }) {
+                    IconButton(onClick = { }) {
                         Icon(
                             imageVector = Icons.Filled.ArrowBack,
                             contentDescription = null,

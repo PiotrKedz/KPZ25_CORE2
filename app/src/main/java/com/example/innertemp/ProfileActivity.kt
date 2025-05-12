@@ -171,7 +171,6 @@ fun ProfileScreen(onBack: () -> Unit) {
                     )
                 },
                 actions = {
-                    // Only show settings icon when not in edit mode
                     if (!isEditMode) {
                         IconButton(onClick = {
                             context.startActivity(android.content.Intent(context, SettingsActivity::class.java))
@@ -182,7 +181,6 @@ fun ProfileScreen(onBack: () -> Unit) {
                             )
                         }
                     } else {
-                        // Empty spacer to maintain layout consistency in edit mode
                         Spacer(modifier = Modifier.size(48.dp))
                     }
                 },
@@ -224,14 +222,13 @@ fun ProfileScreen(onBack: () -> Unit) {
                         .fillMaxWidth()
                         .padding(16.dp)
                 ) {
+                    Text(
+                        "Personal Information",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
                     if (isEditMode) {
-                        Text(
-                            "Personal Information",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(bottom = 16.dp)
-                        )
-
                         OutlinedTextField(
                             value = name,
                             onValueChange = {
