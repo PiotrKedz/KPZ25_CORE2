@@ -35,30 +35,62 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import android.content.Context
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color as ComposeColor
+import android.content.Intent
+import android.util.Log
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.material.icons.outlined.*
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 
 class ProfileActivity : ComponentActivity() {
+    private var useDarkTheme by mutableStateOf(false)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        loadThemePreference()
+
         setContent {
-            InnerTempTheme {
+            InnerTempTheme(darkTheme = useDarkTheme) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    ProfileScreen(onBack = { finish() })
+                    ProfileScreen(
+                        onBack = { finish() },
+                        onThemeChanged = {
+                            finish()
+                            startActivity(intent)
+                            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+                        }
+                    )
                 }
             }
         }
+
+        lifecycle.addObserver(LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                val currentTheme = getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+                    .getString("theme", "Light") ?: "Light"
+                val shouldUseDarkTheme = currentTheme == "Dark"
+
+                if (shouldUseDarkTheme != useDarkTheme) {
+                    useDarkTheme = shouldUseDarkTheme
+                }
+            }
+        })
+    }
+
+    private fun loadThemePreference() {
+        val sharedPref = getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+        val savedTheme = sharedPref.getString("theme", "Light") ?: "Light"
+        useDarkTheme = savedTheme == "Dark"
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreen(onBack: () -> Unit) {
+fun ProfileScreen(onBack: () -> Unit, onThemeChanged: () -> Unit) {
     var name by remember { mutableStateOf("") }
     var genderExpanded by remember { mutableStateOf(false) }
     var selectedGender by remember { mutableStateOf("") }
@@ -173,7 +205,8 @@ fun ProfileScreen(onBack: () -> Unit) {
                 actions = {
                     if (!isEditMode) {
                         IconButton(onClick = {
-                            context.startActivity(android.content.Intent(context, SettingsActivity::class.java))
+                            val settingsIntent = Intent(context, SettingsActivity::class.java)
+                            context.startActivity(settingsIntent)
                         }) {
                             Icon(
                                 imageVector = Icons.Default.Settings,
@@ -684,6 +717,6 @@ fun ProfileInfoRow(icon: androidx.compose.ui.graphics.vector.ImageVector, label:
 @Composable
 fun ProfileScreenPreview() {
     InnerTempTheme {
-        ProfileScreen(onBack = {})
+        ProfileScreen(onBack = {}, onThemeChanged = {})
     }
 }

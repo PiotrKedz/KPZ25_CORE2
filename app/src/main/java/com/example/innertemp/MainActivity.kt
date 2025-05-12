@@ -2,6 +2,7 @@ package com.example.innertemp
 
 import android.Manifest
 import android.bluetooth.BluetoothAdapter
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -28,6 +29,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import com.example.innertemp.ui.theme.Blue
 import com.example.innertemp.ui.theme.Green
 import com.example.innertemp.ui.theme.InnerTempTheme
@@ -47,6 +50,7 @@ class MainActivity : ComponentActivity() {
     private val _batteryLevel = mutableStateOf(0.0)
     private val _isPaused = mutableStateOf(false)
     private val _isMonitoring = mutableStateOf(false)
+    private var useDarkTheme by mutableStateOf(false)
 
     // Core temperature average tracking
     private val _averageTemperatureCore = mutableStateOf(0.0)
@@ -140,9 +144,25 @@ class MainActivity : ComponentActivity() {
         Log.d(TAG, "Average temperature tracking reset")
     }
 
+    private fun loadThemePreference() {
+        val sharedPref = getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+        val savedTheme = sharedPref.getString("theme", "Light") ?: "Light"
+        useDarkTheme = savedTheme == "Dark"
+        Log.d(TAG, "Loaded theme preference: $savedTheme")
+    }
+
+    private fun onThemeChanged() {
+        Log.d(TAG, "Theme changed, recreating activity")
+        finish()
+        startActivity(intent)
+        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        loadThemePreference()
 
         // Initialize the temperature logger
         temperatureLogger = TemperatureLogger(this)
@@ -189,7 +209,7 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            InnerTempTheme {
+            InnerTempTheme(darkTheme = useDarkTheme) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
@@ -235,6 +255,19 @@ class MainActivity : ComponentActivity() {
             }
         }
         checkPermissions()
+
+        lifecycle.addObserver(LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                val currentTheme = getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+                    .getString("theme", "Light") ?: "Light"
+                val shouldUseDarkTheme = currentTheme == "Dark"
+
+                if (shouldUseDarkTheme != useDarkTheme) {
+                    useDarkTheme = shouldUseDarkTheme
+                    onThemeChanged()
+                }
+            }
+        })
     }
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)

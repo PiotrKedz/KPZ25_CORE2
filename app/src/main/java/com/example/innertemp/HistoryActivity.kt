@@ -43,10 +43,15 @@ import androidx.compose.ui.graphics.Color as ComposeColor
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import java.io.File
+import android.content.Context
+import android.content.Intent
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 
 
 class HistoryActivity : AppCompatActivity() {
     private lateinit var temperatureLogger: TemperatureLogger
+    private var useDarkTheme by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,14 +60,44 @@ class HistoryActivity : AppCompatActivity() {
         // Initialize the temperature logger
         temperatureLogger = TemperatureLogger(this)
 
+        loadThemePreference()
+
         setContent {
-            InnerTempTheme {
-                HistoryScreen(
-                    onBack = { finish() },
-                    temperatureLogger = temperatureLogger
-                )
+            InnerTempTheme(darkTheme = useDarkTheme) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    HistoryScreen(
+                        onBack = { finish() },
+                        temperatureLogger = temperatureLogger,
+                        onThemeChanged = {
+                            finish()
+                            startActivity(intent)
+                            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+                        }
+                    )
+                }
             }
         }
+
+        lifecycle.addObserver(LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                val currentTheme = getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+                    .getString("theme", "Light") ?: "Light"
+                val shouldUseDarkTheme = currentTheme == "Dark"
+
+                if (shouldUseDarkTheme != useDarkTheme) {
+                    useDarkTheme = shouldUseDarkTheme
+                }
+            }
+        })
+    }
+
+    private fun loadThemePreference() {
+        val sharedPref = getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+        val savedTheme = sharedPref.getString("theme", "Light") ?: "Light"
+        useDarkTheme = savedTheme == "Dark"
     }
 }
 
@@ -70,7 +105,8 @@ class HistoryActivity : AppCompatActivity() {
 @Composable
 fun HistoryScreen(
     onBack: () -> Unit,
-    temperatureLogger: TemperatureLogger
+    temperatureLogger: TemperatureLogger,
+    onThemeChanged: () -> Unit
 ) {
     Scaffold(
         topBar = {
