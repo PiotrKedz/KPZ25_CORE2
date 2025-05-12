@@ -31,6 +31,8 @@
     <string msgid="8875138169939072951" name="abc_shareactionprovider_share_with">"分享對象"</string>
     <string msgid="9055268688411532828" name="abc_shareactionprovider_share_with_application">"使用「<ns1:g id="APPLICATION_NAME">%s</ns1:g>」分享"</string>
     <string msgid="1656852541809559762" name="abc_toolbar_collapse_description">"收合"</string>
+    <string msgid="8397015543330865059" name="android.credentials.TYPE_PASSWORD_CREDENTIAL">"密碼"</string>
+    <string msgid="3929015085059320822" name="androidx.credentials.TYPE_PUBLIC_KEY_CREDENTIAL">"密鑰"</string>
     <string msgid="389117264260014992" name="autofill">"自動填入"</string>
     <string name="bottomsheet_action_collapse">收合頁底面板</string>
     <string name="bottomsheet_action_expand">展開頁底面板</string>
@@ -49,12 +51,34 @@
     <string name="clear_text_end_icon_content_description">清除文字</string>
     <string msgid="406453423630273620" name="close_drawer">"閂導覽選單"</string>
     <string msgid="7573152094250666567" name="close_sheet">"閂表單"</string>
+    <string msgid="2523291102206661146" name="common_google_play_services_enable_button">啟用</string>
+    <string msgid="227660514972886228" name="common_google_play_services_enable_text">你必須啟用 Google Play 服務，方可執行「%1$s」。</string>
+    <string msgid="5122002158466380389" name="common_google_play_services_enable_title">啟用 Google Play 服務</string>
+    <string msgid="7153882981874058840" name="common_google_play_services_install_button">安裝</string>
+    <string name="common_google_play_services_install_text">你的裝置尚未安裝 Google Play 服務，因此無法執行「%1$s」。</string>
+    <string msgid="7215213145546190223" name="common_google_play_services_install_title">安裝 Google Play 服務</string>
+    <string name="common_google_play_services_notification_channel_name">Google Play 服務的適用範圍</string>
+    <string name="common_google_play_services_notification_ticker">Google Play 服務錯誤</string>
+    <string name="common_google_play_services_unknown_issue">「%1$s」存取 Google Play 服務時發生問題。請稍後再試一次。</string>
+    <string name="common_google_play_services_unsupported_text">你的裝置不支援 Google Play 服務，因此無法執行「%1$s」。</string>
+    <string msgid="6556509956452265614" name="common_google_play_services_update_button">更新</string>
+    <string msgid="9053896323427875356" name="common_google_play_services_update_text">你必須更新「Google Play 服務」，才能執行 %1$s。</string>
+    <string msgid="6006316683626838685" name="common_google_play_services_update_title">更新 Google Play 服務</string>
+    <string name="common_google_play_services_updating_text">正在更新 Google Play 服務，更新完成後方可執行「%1$s」。</string>
+    <string name="common_google_play_services_wear_update_text">需要使用新版本的 Google Play 服務。更新會即將自動開始。</string>
+    <string name="common_open_on_phone">在手機開啟</string>
+    <string name="common_signin_button_text">登入</string>
+    <string name="common_signin_button_text_long">透過 Google 登入</string>
+    <string msgid="3260749812566568062" name="copy_toast_msg">"連結已複製到剪貼簿"</string>
     <string msgid="8038256446254964252" name="default_error_message">"輸入嘅資料無效"</string>
     <string msgid="6312721426453364202" name="default_popup_window_title">"彈出式視窗"</string>
     <string msgid="1890207353314751437" name="dropdown_menu">"下拉式選單"</string>
     <string name="error_a11y_label">錯誤：冇效</string>
     <string name="error_icon_content_description">錯誤</string>
     <string name="exposed_dropdown_menu_content_description">顯示下拉式選單</string>
+    <string msgid="4566929209979330987" name="fallback_menu_item_copy_link">"複製連結"</string>
+    <string msgid="3413186855122069269" name="fallback_menu_item_open_in_browser">"在瀏覽器中開啟"</string>
+    <string msgid="7145444925855055364" name="fallback_menu_item_share_link">"分享連結"</string>
     <string name="icon_content_description">對話框圖示</string>
     <string msgid="6827826412747255547" name="in_progress">"進行中"</string>
     <string msgid="7933458017204019916" name="indeterminate">"部分剔咗"</string>

@@ -62,6 +62,10 @@ class ProfileActivity : ComponentActivity() {
                             finish()
                             startActivity(intent)
                             overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+                        },
+                        onNavigateToAccount = {
+                            val accountIntent = Intent(this, AccountActivity::class.java)
+                            startActivity(accountIntent)
                         }
                     )
                 }
@@ -90,7 +94,11 @@ class ProfileActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreen(onBack: () -> Unit, onThemeChanged: () -> Unit) {
+fun ProfileScreen(
+    onBack: () -> Unit,
+    onThemeChanged: () -> Unit,
+    onNavigateToAccount: () -> Unit
+) {
     var name by remember { mutableStateOf("") }
     var genderExpanded by remember { mutableStateOf(false) }
     var selectedGender by remember { mutableStateOf("") }
@@ -102,6 +110,12 @@ fun ProfileScreen(onBack: () -> Unit, onThemeChanged: () -> Unit) {
     val day = calendar.get(Calendar.DAY_OF_MONTH)
     var isDataChanged by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
+    var isUserSignedIn by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        val sharedPref = context.getSharedPreferences("user_auth", Context.MODE_PRIVATE)
+        isUserSignedIn = sharedPref.getBoolean("is_signed_in", false)
+    }
 
     val datePickerDialog = remember {
         DatePickerDialog(
@@ -158,6 +172,15 @@ fun ProfileScreen(onBack: () -> Unit, onThemeChanged: () -> Unit) {
             putString("athletic_level", athleticLevel)
             apply()
         }
+    }
+
+    fun signOut(context: Context) {
+        val sharedPref = context.getSharedPreferences("user_auth", Context.MODE_PRIVATE)
+        with(sharedPref.edit()) {
+            putBoolean("is_signed_in", false)
+            apply()
+        }
+        isUserSignedIn = false
     }
 
     fun validateDateOfBirth(dateString: String): Boolean {
@@ -646,6 +669,41 @@ fun ProfileScreen(onBack: () -> Unit, onThemeChanged: () -> Unit) {
                 )
             }
 
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (!isEditMode) {
+                Button(
+                    onClick = {
+                        if (isUserSignedIn) {
+                            signOut(context)
+                        } else {
+                            onNavigateToAccount()
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth(0.8f)
+                        .height(48.dp),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isUserSignedIn)
+                            MaterialTheme.colorScheme.error
+                        else
+                            MaterialTheme.colorScheme.secondary
+                    )
+                ) {
+                    Icon(
+                        imageVector = if (isUserSignedIn) Icons.Default.Logout else Icons.Default.Login,
+                        contentDescription = if (isUserSignedIn) "Sign Out" else "Sign In",
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        if (isUserSignedIn) "Sign Out" else "Sign In / Sign Up",
+                        fontSize = 16.sp
+                    )
+                }
+            }
+
             Spacer(modifier = Modifier.height(24.dp))
 
             if (showExitDialog) {
@@ -717,6 +775,10 @@ fun ProfileInfoRow(icon: androidx.compose.ui.graphics.vector.ImageVector, label:
 @Composable
 fun ProfileScreenPreview() {
     InnerTempTheme {
-        ProfileScreen(onBack = {}, onThemeChanged = {})
+        ProfileScreen(
+            onBack = {},
+            onThemeChanged = {},
+            onNavigateToAccount = {}
+        )
     }
 }

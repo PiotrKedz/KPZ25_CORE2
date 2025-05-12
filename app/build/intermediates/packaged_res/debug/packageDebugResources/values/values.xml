@@ -10,5 +10,11 @@
     <string name="app_name">InnerTemp</string>
     <string name="channel_description">Notifications of temperature out of range</string>
     <string name="channel_name">TEMP_ALERT</string>
+    <string name="gcm_defaultSenderId" translatable="false">542821370865</string>
+    <string name="google_api_key" translatable="false">AIzaSyBmugpT0Vzuss0dCiXUoKSpwVFG1qAWzI8</string>
+    <string name="google_app_id" translatable="false">1:542821370865:android:4e87ecca312d33aa031250</string>
+    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyBmugpT0Vzuss0dCiXUoKSpwVFG1qAWzI8</string>
+    <string name="google_storage_bucket" translatable="false">kpz25core2.firebasestorage.app</string>
+    <string name="project_id" translatable="false">kpz25core2</string>
     <style name="Theme.InnerTemp" parent="Theme.MaterialComponents.DayNight.NoActionBar"/>
 </resources>
