@@ -25,6 +25,10 @@
             android:exported="false"
             android:theme="@style/Theme.InnerTemp" />
         <activity
+            android:name=".AccountActivity"
+            android:exported="false"
+            android:theme="@style/Theme.InnerTemp" />
+        <activity
             android:name=".ProfileActivity"
             android:exported="false"
             android:theme="@style/Theme.InnerTemp" />
