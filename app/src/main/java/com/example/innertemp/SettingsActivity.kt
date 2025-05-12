@@ -24,6 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -79,6 +80,10 @@ fun SettingsScreen(onBack: () -> Unit, onThemeChanged: () -> Unit) {
         mutableStateOf(sharedPref.getString("theme", "Light") ?: "Light")
     }
 
+    var pushNotificationsEnabled by remember {
+        mutableStateOf(sharedPref.getBoolean("push_notifications", true))
+    }
+
     fun saveThemePreference(theme: String) {
         with(sharedPref.edit()) {
             putString("theme", theme)
@@ -86,6 +91,14 @@ fun SettingsScreen(onBack: () -> Unit, onThemeChanged: () -> Unit) {
         }
         selectedTheme = theme
         onThemeChanged()
+    }
+
+    fun savePushNotificationPreference(enabled: Boolean) {
+        with(sharedPref.edit()) {
+            putBoolean("push_notifications", enabled)
+            apply()
+        }
+        pushNotificationsEnabled = enabled
     }
 
     Scaffold(
@@ -205,6 +218,35 @@ fun SettingsScreen(onBack: () -> Unit, onThemeChanged: () -> Unit) {
                             )
                         }
                     }
+                }
+            }
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Push Notifications",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    Switch(
+                        checked = pushNotificationsEnabled,
+                        onCheckedChange = { isChecked ->
+                            savePushNotificationPreference(isChecked)
+                        }
+                    )
                 }
             }
         }
