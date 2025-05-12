@@ -1,0 +1,36 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.example.wearos-mergeDebugResources-90:/values-round-v23/values-round-v23.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\User\\Desktop\\KPZ25_CORE2-InnerTempv0.95\\app\\wearos\\src\\main\\res\\values-round\\strings.xml",
+                    "from": {
+                        "startLines": "1",
+                        "startColumns": "4",
+                        "startOffsets": "16",
+                        "endColumns": "75",
+                        "endOffsets": "87"
+                    },
+                    "to": {
+                        "startLines": "3",
+                        "startColumns": "4",
+                        "startOffsets": "140",
+                        "endColumns": "75",
+                        "endOffsets": "211"
+                    }
+                },
+                {
+                    "source": "C:\\Users\\User\\.gradle\\caches\\8.11.1\\transforms\\2e968ed6f897378fb4fc420f0456d9fb\\transformed\\wear-1.3.0\\res\\values-round-v23\\values-round-v23.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "84",
+                        "endOffsets": "135"
+                    }
+                }
+            ]
+        }
+    ]
+}

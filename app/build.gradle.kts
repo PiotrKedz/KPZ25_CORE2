@@ -66,5 +66,7 @@ dependencies {
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-auth-ktx:22.0.0")
     implementation ("com.google.firebase:firebase-firestore-ktx")
+    implementation ("androidx.wear:wear-remote-interactions:1.0.0")
+    implementation ("com.google.android.gms:play-services-wearable:18.0.0")
 }
 

@@ -1,0 +1,253 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.example.wearos"
+4    android:versionCode="1"
+5    android:versionName="1.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="30"
+9        android:targetSdkVersion="35" />
+10
+11    <uses-feature android:name="android.hardware.type.watch" />
+11-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:4:5-64
+11-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:4:19-61
+12
+13    <uses-permission android:name="android.permission.WAKE_LOCK" />
+13-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:6:5-68
+13-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:6:22-65
+14
+15    <queries>
+15-->[androidx.wear.tiles:tiles:1.4.0] C:\Users\User\.gradle\caches\8.11.1\transforms\3043785b59045e9bf29bb8e1ab4fb41e\transformed\tiles-1.4.0\AndroidManifest.xml:7:5-11:15
+16        <intent>
+16-->[androidx.wear.tiles:tiles:1.4.0] C:\Users\User\.gradle\caches\8.11.1\transforms\3043785b59045e9bf29bb8e1ab4fb41e\transformed\tiles-1.4.0\AndroidManifest.xml:8:9-10:18
+17            <action android:name="androidx.wear.tiles.action.BIND_UPDATE_REQUESTER" />
+17-->[androidx.wear.tiles:tiles:1.4.0] C:\Users\User\.gradle\caches\8.11.1\transforms\3043785b59045e9bf29bb8e1ab4fb41e\transformed\tiles-1.4.0\AndroidManifest.xml:9:13-87
+17-->[androidx.wear.tiles:tiles:1.4.0] C:\Users\User\.gradle\caches\8.11.1\transforms\3043785b59045e9bf29bb8e1ab4fb41e\transformed\tiles-1.4.0\AndroidManifest.xml:9:21-84
+18        </intent>
+19    </queries>
+20
+21    <permission
+21-->[androidx.core:core:1.13.1] C:\Users\User\.gradle\caches\8.11.1\transforms\142a7ae59e0c3d3201df3c3643a1e246\transformed\core-1.13.1\AndroidManifest.xml:22:5-24:47
+22        android:name="com.example.wearos.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+22-->[androidx.core:core:1.13.1] C:\Users\User\.gradle\caches\8.11.1\transforms\142a7ae59e0c3d3201df3c3643a1e246\transformed\core-1.13.1\AndroidManifest.xml:23:9-81
+23        android:protectionLevel="signature" />
+23-->[androidx.core:core:1.13.1] C:\Users\User\.gradle\caches\8.11.1\transforms\142a7ae59e0c3d3201df3c3643a1e246\transformed\core-1.13.1\AndroidManifest.xml:24:9-44
+24
+25    <uses-permission android:name="com.example.wearos.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+25-->[androidx.core:core:1.13.1] C:\Users\User\.gradle\caches\8.11.1\transforms\142a7ae59e0c3d3201df3c3643a1e246\transformed\core-1.13.1\AndroidManifest.xml:26:5-97
+25-->[androidx.core:core:1.13.1] C:\Users\User\.gradle\caches\8.11.1\transforms\142a7ae59e0c3d3201df3c3643a1e246\transformed\core-1.13.1\AndroidManifest.xml:26:22-94
+26
+27    <application
+27-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:8:5-69:19
+28        android:allowBackup="true"
+28-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:9:9-35
+29        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+29-->[androidx.core:core:1.13.1] C:\Users\User\.gradle\caches\8.11.1\transforms\142a7ae59e0c3d3201df3c3643a1e246\transformed\core-1.13.1\AndroidManifest.xml:28:18-86
+30        android:debuggable="true"
+31        android:extractNativeLibs="false"
+32        android:icon="@mipmap/ic_launcher"
+32-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:10:9-43
+33        android:label="@string/app_name"
+33-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:11:9-41
+34        android:supportsRtl="true"
+34-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:12:9-35
+35        android:testOnly="true"
+36        android:theme="@android:style/Theme.DeviceDefault" >
+36-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:13:9-59
+37        <meta-data
+37-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:14:9-16:69
+38            android:name="com.google.android.gms.version"
+38-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:15:13-58
+39            android:value="@integer/google_play_services_version" />
+39-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:16:13-66
+40
+41        <service
+41-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:17:9-32:19
+42            android:name="com.example.wearos.complication.MainComplicationService"
+42-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:18:13-65
+43            android:exported="true"
+43-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:19:13-36
+44            android:label="@string/complication_label"
+44-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:20:13-55
+45            android:permission="com.google.android.wearable.permission.BIND_COMPLICATION_PROVIDER" >
+45-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:21:13-99
+46            <intent-filter>
+46-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:22:13-24:29
+47                <action android:name="android.support.wearable.complications.ACTION_COMPLICATION_UPDATE_REQUEST" />
+47-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:23:17-116
+47-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:23:25-113
+48            </intent-filter>
+49
+50            <meta-data
+50-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:26:13-28:46
+51                android:name="android.support.wearable.complications.SUPPORTED_TYPES"
+51-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:27:17-86
+52                android:value="SHORT_TEXT" />
+52-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:28:17-43
+53            <meta-data
+53-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:29:13-31:37
+54                android:name="android.support.wearable.complications.UPDATE_PERIOD_SECONDS"
+54-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:30:17-92
+55                android:value="0" />
+55-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:31:17-34
+56        </service>
+57        <service
+57-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:33:9-45:19
+58            android:name="com.example.wearos.tile.MainTileService"
+58-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:34:13-49
+59            android:exported="true"
+59-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:35:13-36
+60            android:label="@string/tile_label"
+60-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:36:13-47
+61            android:permission="com.google.android.wearable.permission.BIND_TILE_PROVIDER" >
+61-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:37:13-91
+62            <intent-filter>
+62-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:38:13-40:29
+63                <action android:name="androidx.wear.tiles.action.BIND_TILE_PROVIDER" />
+63-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:39:17-88
+63-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:39:25-85
+64            </intent-filter>
+65
+66            <meta-data
+66-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:42:13-44:61
+67                android:name="androidx.wear.tiles.PREVIEW"
+67-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:43:17-59
+68                android:resource="@drawable/tile_preview" />
+68-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:44:17-58
+69        </service>
+70
+71        <uses-library
+71-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:47:9-49:39
+72            android:name="com.google.android.wearable"
+72-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:48:13-55
+73            android:required="true" />
+73-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:49:13-36
+74        <!--
+75               Set to true if your app is Standalone, that is, it does not require the handheld
+76               app to run.
+77        -->
+78        <meta-data
+78-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:54:9-56:36
+79            android:name="com.google.android.wearable.standalone"
+79-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:55:13-66
+80            android:value="true" />
+80-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:56:13-33
+81
+82        <activity
+82-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:58:9-68:20
+83            android:name="com.example.wearos.presentation.MainActivity"
+83-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:59:13-54
+84            android:exported="true"
+84-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:60:13-36
+85            android:taskAffinity=""
+85-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:61:13-36
+86            android:theme="@style/MainActivityTheme.Starting" >
+86-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:62:13-62
+87            <intent-filter>
+87-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:63:13-67:29
+88                <action android:name="android.intent.action.MAIN" />
+88-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:64:17-69
+88-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:64:25-66
+89
+90                <category android:name="android.intent.category.LAUNCHER" />
+90-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:66:17-77
+90-->C:\Users\User\Desktop\KPZ25_CORE2-InnerTempv0.95\app\wearos\src\main\AndroidManifest.xml:66:27-74
+91            </intent-filter>
+92        </activity>
+93
+94        <uses-library
+94-->[androidx.wear.tiles:tiles:1.4.0] C:\Users\User\.gradle\caches\8.11.1\transforms\3043785b59045e9bf29bb8e1ab4fb41e\transformed\tiles-1.4.0\AndroidManifest.xml:14:9-16:40
+95            android:name="wear-sdk"
+95-->[androidx.wear.tiles:tiles:1.4.0] C:\Users\User\.gradle\caches\8.11.1\transforms\3043785b59045e9bf29bb8e1ab4fb41e\transformed\tiles-1.4.0\AndroidManifest.xml:15:13-36
+96            android:required="false" />
+96-->[androidx.wear.tiles:tiles:1.4.0] C:\Users\User\.gradle\caches\8.11.1\transforms\3043785b59045e9bf29bb8e1ab4fb41e\transformed\tiles-1.4.0\AndroidManifest.xml:16:13-37
+97
+98        <activity
+98-->[androidx.compose.ui:ui-tooling-android:1.7.0] C:\Users\User\.gradle\caches\8.11.1\transforms\0fbb2b2fdf1f715765d4e9514f93180c\transformed\ui-tooling-release\AndroidManifest.xml:23:9-25:39
+99            android:name="androidx.compose.ui.tooling.PreviewActivity"
+99-->[androidx.compose.ui:ui-tooling-android:1.7.0] C:\Users\User\.gradle\caches\8.11.1\transforms\0fbb2b2fdf1f715765d4e9514f93180c\transformed\ui-tooling-release\AndroidManifest.xml:24:13-71
+100            android:exported="true" />
+100-->[androidx.compose.ui:ui-tooling-android:1.7.0] C:\Users\User\.gradle\caches\8.11.1\transforms\0fbb2b2fdf1f715765d4e9514f93180c\transformed\ui-tooling-release\AndroidManifest.xml:25:13-36
+101        <activity
+101-->[androidx.compose.ui:ui-test-manifest:1.7.0] C:\Users\User\.gradle\caches\8.11.1\transforms\9776ecae34d44acb6fd857d455eb5975\transformed\ui-test-manifest-1.7.0\AndroidManifest.xml:23:9-25:39
+102            android:name="androidx.activity.ComponentActivity"
+102-->[androidx.compose.ui:ui-test-manifest:1.7.0] C:\Users\User\.gradle\caches\8.11.1\transforms\9776ecae34d44acb6fd857d455eb5975\transformed\ui-test-manifest-1.7.0\AndroidManifest.xml:24:13-63
+103            android:exported="true" />
+103-->[androidx.compose.ui:ui-test-manifest:1.7.0] C:\Users\User\.gradle\caches\8.11.1\transforms\9776ecae34d44acb6fd857d455eb5975\transformed\ui-test-manifest-1.7.0\AndroidManifest.xml:25:13-36
+104        <activity
+104-->[com.google.android.gms:play-services-base:18.0.1] C:\Users\User\.gradle\caches\8.11.1\transforms\0c498a1f8044e4572dd5fdcaf05e8ee0\transformed\play-services-base-18.0.1\AndroidManifest.xml:20:9-22:45
+105            android:name="com.google.android.gms.common.api.GoogleApiActivity"
+105-->[com.google.android.gms:play-services-base:18.0.1] C:\Users\User\.gradle\caches\8.11.1\transforms\0c498a1f8044e4572dd5fdcaf05e8ee0\transformed\play-services-base-18.0.1\AndroidManifest.xml:20:19-85
+106            android:exported="false"
+106-->[com.google.android.gms:play-services-base:18.0.1] C:\Users\User\.gradle\caches\8.11.1\transforms\0c498a1f8044e4572dd5fdcaf05e8ee0\transformed\play-services-base-18.0.1\AndroidManifest.xml:22:19-43
+107            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+107-->[com.google.android.gms:play-services-base:18.0.1] C:\Users\User\.gradle\caches\8.11.1\transforms\0c498a1f8044e4572dd5fdcaf05e8ee0\transformed\play-services-base-18.0.1\AndroidManifest.xml:21:19-78
+108
+109        <provider
+109-->[androidx.emoji2:emoji2:1.3.0] C:\Users\User\.gradle\caches\8.11.1\transforms\93c72ad868608dfb2cf712c38eea933d\transformed\emoji2-1.3.0\AndroidManifest.xml:24:9-32:20
+110            android:name="androidx.startup.InitializationProvider"
+110-->[androidx.emoji2:emoji2:1.3.0] C:\Users\User\.gradle\caches\8.11.1\transforms\93c72ad868608dfb2cf712c38eea933d\transformed\emoji2-1.3.0\AndroidManifest.xml:25:13-67
+111            android:authorities="com.example.wearos.androidx-startup"
+111-->[androidx.emoji2:emoji2:1.3.0] C:\Users\User\.gradle\caches\8.11.1\transforms\93c72ad868608dfb2cf712c38eea933d\transformed\emoji2-1.3.0\AndroidManifest.xml:26:13-68
+112            android:exported="false" >
+112-->[androidx.emoji2:emoji2:1.3.0] C:\Users\User\.gradle\caches\8.11.1\transforms\93c72ad868608dfb2cf712c38eea933d\transformed\emoji2-1.3.0\AndroidManifest.xml:27:13-37
+113            <meta-data
+113-->[androidx.emoji2:emoji2:1.3.0] C:\Users\User\.gradle\caches\8.11.1\transforms\93c72ad868608dfb2cf712c38eea933d\transformed\emoji2-1.3.0\AndroidManifest.xml:29:13-31:52
+114                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+114-->[androidx.emoji2:emoji2:1.3.0] C:\Users\User\.gradle\caches\8.11.1\transforms\93c72ad868608dfb2cf712c38eea933d\transformed\emoji2-1.3.0\AndroidManifest.xml:30:17-75
+115                android:value="androidx.startup" />
+115-->[androidx.emoji2:emoji2:1.3.0] C:\Users\User\.gradle\caches\8.11.1\transforms\93c72ad868608dfb2cf712c38eea933d\transformed\emoji2-1.3.0\AndroidManifest.xml:31:17-49
+116            <meta-data
+116-->[androidx.lifecycle:lifecycle-process:2.8.3] C:\Users\User\.gradle\caches\8.11.1\transforms\e1280cf1e8657669832d88532615b46c\transformed\lifecycle-process-2.8.3\AndroidManifest.xml:29:13-31:52
+117                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+117-->[androidx.lifecycle:lifecycle-process:2.8.3] C:\Users\User\.gradle\caches\8.11.1\transforms\e1280cf1e8657669832d88532615b46c\transformed\lifecycle-process-2.8.3\AndroidManifest.xml:30:17-78
+118                android:value="androidx.startup" />
+118-->[androidx.lifecycle:lifecycle-process:2.8.3] C:\Users\User\.gradle\caches\8.11.1\transforms\e1280cf1e8657669832d88532615b46c\transformed\lifecycle-process-2.8.3\AndroidManifest.xml:31:17-49
+119            <meta-data
+119-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\User\.gradle\caches\8.11.1\transforms\a38738b1e9612b6d3646189dfa97e0e1\transformed\profileinstaller-1.4.0\AndroidManifest.xml:29:13-31:52
+120                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+120-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\User\.gradle\caches\8.11.1\transforms\a38738b1e9612b6d3646189dfa97e0e1\transformed\profileinstaller-1.4.0\AndroidManifest.xml:30:17-85
+121                android:value="androidx.startup" />
+121-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\User\.gradle\caches\8.11.1\transforms\a38738b1e9612b6d3646189dfa97e0e1\transformed\profileinstaller-1.4.0\AndroidManifest.xml:31:17-49
+122        </provider>
+123
+124        <receiver
+124-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\User\.gradle\caches\8.11.1\transforms\a38738b1e9612b6d3646189dfa97e0e1\transformed\profileinstaller-1.4.0\AndroidManifest.xml:34:9-52:20
+125            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+125-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\User\.gradle\caches\8.11.1\transforms\a38738b1e9612b6d3646189dfa97e0e1\transformed\profileinstaller-1.4.0\AndroidManifest.xml:35:13-76
+126            android:directBootAware="false"
+126-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\User\.gradle\caches\8.11.1\transforms\a38738b1e9612b6d3646189dfa97e0e1\transformed\profileinstaller-1.4.0\AndroidManifest.xml:36:13-44
+127            android:enabled="true"
+127-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\User\.gradle\caches\8.11.1\transforms\a38738b1e9612b6d3646189dfa97e0e1\transformed\profileinstaller-1.4.0\AndroidManifest.xml:37:13-35
+128            android:exported="true"
+128-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\User\.gradle\caches\8.11.1\transforms\a38738b1e9612b6d3646189dfa97e0e1\transformed\profileinstaller-1.4.0\AndroidManifest.xml:38:13-36
+129            android:permission="android.permission.DUMP" >
+129-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\User\.gradle\caches\8.11.1\transforms\a38738b1e9612b6d3646189dfa97e0e1\transformed\profileinstaller-1.4.0\AndroidManifest.xml:39:13-57
+130            <intent-filter>
+130-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\User\.gradle\caches\8.11.1\transforms\a38738b1e9612b6d3646189dfa97e0e1\transformed\profileinstaller-1.4.0\AndroidManifest.xml:40:13-42:29
+131                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+131-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\User\.gradle\caches\8.11.1\transforms\a38738b1e9612b6d3646189dfa97e0e1\transformed\profileinstaller-1.4.0\AndroidManifest.xml:41:17-91
+131-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\User\.gradle\caches\8.11.1\transforms\a38738b1e9612b6d3646189dfa97e0e1\transformed\profileinstaller-1.4.0\AndroidManifest.xml:41:25-88
+132            </intent-filter>
+133            <intent-filter>
+133-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\User\.gradle\caches\8.11.1\transforms\a38738b1e9612b6d3646189dfa97e0e1\transformed\profileinstaller-1.4.0\AndroidManifest.xml:43:13-45:29
+134                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+134-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\User\.gradle\caches\8.11.1\transforms\a38738b1e9612b6d3646189dfa97e0e1\transformed\profileinstaller-1.4.0\AndroidManifest.xml:44:17-85
+134-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\User\.gradle\caches\8.11.1\transforms\a38738b1e9612b6d3646189dfa97e0e1\transformed\profileinstaller-1.4.0\AndroidManifest.xml:44:25-82
+135            </intent-filter>
+136            <intent-filter>
+136-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\User\.gradle\caches\8.11.1\transforms\a38738b1e9612b6d3646189dfa97e0e1\transformed\profileinstaller-1.4.0\AndroidManifest.xml:46:13-48:29
+137                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+137-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\User\.gradle\caches\8.11.1\transforms\a38738b1e9612b6d3646189dfa97e0e1\transformed\profileinstaller-1.4.0\AndroidManifest.xml:47:17-88
+137-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\User\.gradle\caches\8.11.1\transforms\a38738b1e9612b6d3646189dfa97e0e1\transformed\profileinstaller-1.4.0\AndroidManifest.xml:47:25-85
+138            </intent-filter>
+139            <intent-filter>
+139-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\User\.gradle\caches\8.11.1\transforms\a38738b1e9612b6d3646189dfa97e0e1\transformed\profileinstaller-1.4.0\AndroidManifest.xml:49:13-51:29
+140                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+140-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\User\.gradle\caches\8.11.1\transforms\a38738b1e9612b6d3646189dfa97e0e1\transformed\profileinstaller-1.4.0\AndroidManifest.xml:50:17-95
+140-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\User\.gradle\caches\8.11.1\transforms\a38738b1e9612b6d3646189dfa97e0e1\transformed\profileinstaller-1.4.0\AndroidManifest.xml:50:25-92
+141            </intent-filter>
+142        </receiver>
+143    </application>
+144
+145</manifest>

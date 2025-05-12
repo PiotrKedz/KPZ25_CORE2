@@ -43,6 +43,7 @@ private const val TAG = "InnerTemp"
 class MainActivity : ComponentActivity() {
     private lateinit var bluetoothManager: BluetoothManager
     private lateinit var temperatureLogger: TemperatureLogger // Add TemperatureLogger
+    private lateinit var wearableDataService: WearableDataService
     private val _isConnected = mutableStateOf(false)
     private val _temperatureCore = mutableStateOf(0.0)
     private val _temperatureSkin = mutableStateOf(0.0)
@@ -162,6 +163,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        wearableDataService = WearableDataService(this)
+
         loadThemePreference()
 
         // Initialize the temperature logger
@@ -184,6 +187,18 @@ class MainActivity : ComponentActivity() {
                 temperatureLogger.startNewSession()
                 resetAverageTemperature()
             }
+
+            // Notify wearable of monitoring status change
+            wearableDataService.sendDataToWearable(
+                tempCore = _temperatureCore.value,
+                tempSkin = _temperatureSkin.value,
+                tempOutside = _temperatureOutside.value,
+                avgTempCore = _averageTemperatureCore.value,
+                batteryLevel = _batteryLevel.value,
+                isConnected = _isConnected.value,
+                isMonitoring = isMonitoring,
+                isPaused = _isPaused.value
+            )
         }
 
         bluetoothManager.setOnPauseStatusChanged { isPaused ->
@@ -205,6 +220,62 @@ class MainActivity : ComponentActivity() {
 
                 // Log the temperature to the file system
                 temperatureLogger.logTemperature(tempCore)
+            }
+
+            bluetoothManager.setOnMonitoringStatusChanged { isMonitoring ->
+                Log.d(TAG, "Monitoring status changed: $isMonitoring")
+                _isMonitoring.value = isMonitoring
+                if (isMonitoring) {
+                    // Start a new logging session when monitoring begins
+                    temperatureLogger.startNewSession()
+                    resetAverageTemperature()
+                }
+
+                // Notify wearable of monitoring status change
+                wearableDataService.sendDataToWearable(
+                    tempCore = _temperatureCore.value,
+                    tempSkin = _temperatureSkin.value,
+                    tempOutside = _temperatureOutside.value,
+                    avgTempCore = _averageTemperatureCore.value,
+                    batteryLevel = _batteryLevel.value,
+                    isConnected = _isConnected.value,
+                    isMonitoring = isMonitoring,
+                    isPaused = _isPaused.value
+                )
+            }
+
+            bluetoothManager.setOnPauseStatusChanged { isPaused ->
+                Log.d(TAG, "Pause status changed: $isPaused")
+                _isPaused.value = isPaused
+
+                // Notify wearable of pause status change
+                wearableDataService.sendDataToWearable(
+                    tempCore = _temperatureCore.value,
+                    tempSkin = _temperatureSkin.value,
+                    tempOutside = _temperatureOutside.value,
+                    avgTempCore = _averageTemperatureCore.value,
+                    batteryLevel = _batteryLevel.value,
+                    isConnected = _isConnected.value,
+                    isMonitoring = _isMonitoring.value,
+                    isPaused = isPaused
+                )
+            }
+
+            bluetoothManager.setOnConnectionStatusChanged { isConnected ->
+                Log.d(TAG, "Connection status changed: $isConnected")
+                _isConnected.value = isConnected
+
+                // Notify wearable of connection status change
+                wearableDataService.sendDataToWearable(
+                    tempCore = _temperatureCore.value,
+                    tempSkin = _temperatureSkin.value,
+                    tempOutside = _temperatureOutside.value,
+                    avgTempCore = _averageTemperatureCore.value,
+                    batteryLevel = _batteryLevel.value,
+                    isConnected = isConnected,
+                    isMonitoring = _isMonitoring.value,
+                    isPaused = _isPaused.value
+                )
             }
         }
 

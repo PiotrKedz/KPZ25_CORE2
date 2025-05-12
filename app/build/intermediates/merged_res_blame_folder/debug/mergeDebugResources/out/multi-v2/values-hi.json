@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.example.innertemp.app-mergeDebugResources-67:/values-hi/values-hi.xml",
+            "outputFile": "com.example.innertemp.app-mergeDebugResources-68:/values-hi/values-hi.xml",
             "map": [
                 {
                     "source": "C:\\Users\\User\\.gradle\\caches\\8.11.1\\transforms\\ec4ecc0cde0ed202fdc854f8aa3239a7\\transformed\\material-release\\res\\values-hi\\values-hi.xml",

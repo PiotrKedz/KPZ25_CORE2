@@ -61,4 +61,6 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
     debugImplementation(libs.androidx.tiles.tooling)
+    implementation ("androidx.wear:wear-remote-interactions:1.0.0")
+    implementation ("com.google.android.gms:play-services-wearable:18.0.0")
 }

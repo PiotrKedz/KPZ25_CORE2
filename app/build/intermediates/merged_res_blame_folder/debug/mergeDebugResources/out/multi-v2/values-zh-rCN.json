@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.example.innertemp.app-mergeDebugResources-67:/values-zh-rCN/values-zh-rCN.xml",
+            "outputFile": "com.example.innertemp.app-mergeDebugResources-68:/values-zh-rCN/values-zh-rCN.xml",
             "map": [
                 {
                     "source": "C:\\Users\\User\\.gradle\\caches\\8.11.1\\transforms\\9da3f2ddd40667b21dcca522619d8412\\transformed\\ui-release\\res\\values-zh-rCN\\values-zh-rCN.xml",
