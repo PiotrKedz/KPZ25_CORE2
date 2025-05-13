@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="white">#FFFFFFFF</color>
+    <string name="app_name">InnerTemp</string>
+    <string name="channel_description">Notifications of temperature out of range</string>
+    <string name="channel_name">TEMP_ALERT</string>
+    <string name="gcm_defaultSenderId" translatable="false">542821370865</string>
+    <string name="google_api_key" translatable="false">AIzaSyBmugpT0Vzuss0dCiXUoKSpwVFG1qAWzI8</string>
+    <string name="google_app_id" translatable="false">1:542821370865:android:4e87ecca312d33aa031250</string>
+    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyBmugpT0Vzuss0dCiXUoKSpwVFG1qAWzI8</string>
+    <string name="google_storage_bucket" translatable="false">kpz25core2.firebasestorage.app</string>
+    <string name="project_id" translatable="false">kpz25core2</string>
+    <style name="Theme.InnerTemp" parent="Theme.MaterialComponents.DayNight.NoActionBar"/>
+</resources>
