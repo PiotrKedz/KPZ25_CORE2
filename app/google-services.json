@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "542821370865",
+    "project_id": "kpz25core2",
+    "storage_bucket": "kpz25core2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:542821370865:android:4e87ecca312d33aa031250",
+        "android_client_info": {
+          "package_name": "com.example.innertemp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBmugpT0Vzuss0dCiXUoKSpwVFG1qAWzI8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
