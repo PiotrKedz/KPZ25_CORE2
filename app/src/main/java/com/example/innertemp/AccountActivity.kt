@@ -69,34 +69,35 @@ class AccountActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        Log.d(TAG, "Activity created")
         auth = Firebase.auth
-
-        // Configure Google Sign In
+        
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestIdToken(getString(R.string.default_web_client_id))
             .requestEmail()
             .build()
 
         googleSignInClient = GoogleSignIn.getClient(this, gso)
-
-        // Initialize Facebook Callback Manager
+        
         callbackManager = CallbackManager.Factory.create()
 
-        // Configure Google Sign In Launcher
         googleSignInLauncher = registerForActivityResult(
             ActivityResultContracts.StartActivityForResult()
         ) { result ->
+            Log.d(TAG, "Google Sign-In result received: ${result.resultCode}")
             if (result.resultCode == RESULT_OK) {
                 val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
                 try {
-                    // Google Sign In was successful, authenticate with Firebase
                     val account = task.getResult(ApiException::class.java)!!
+                    Log.d(TAG, "Google Sign-In successful, ID Token: ${account.idToken?.take(10)}...")
                     firebaseAuthWithGoogle(account.idToken!!)
                 } catch (e: ApiException) {
-                    // Google Sign In failed
-                    Log.w(TAG, "Google sign in failed", e)
-                    showToast("Google sign in failed: ${e.message}")
+                    Log.e(TAG, "Google sign in failed, error code: ${e.statusCode}", e)
+                    showToast("Google sign in failed: ${e.message} (code: ${e.statusCode})")
                 }
+            } else {
+                Log.w(TAG, "Google Sign-In was cancelled or failed with resultCode: ${result.resultCode}")
+                showToast("Google sign in was cancelled")
             }
         }
 
@@ -180,28 +181,41 @@ class AccountActivity : ComponentActivity() {
     }
 
     private fun signInWithGoogle() {
-        val signInIntent = googleSignInClient.signInIntent
-        googleSignInLauncher.launch(signInIntent)
+        Log.d(TAG, "Starting Google Sign-In flow")
+        googleSignInClient.signOut().addOnCompleteListener {
+            val signInIntent = googleSignInClient.signInIntent
+            googleSignInLauncher.launch(signInIntent)
+        }
     }
 
     private fun firebaseAuthWithGoogle(idToken: String) {
+        Log.d(TAG, "firebaseAuthWithGoogle started")
         val credential = GoogleAuthProvider.getCredential(idToken, null)
         CoroutineScope(Dispatchers.IO).launch {
             try {
+                Log.d(TAG, "Attempting Firebase auth with Google credential")
                 val authResult = auth.signInWithCredential(credential).await()
                 val isNewUser = authResult.additionalUserInfo?.isNewUser ?: false
+                val user = authResult.user
 
                 withContext(Dispatchers.Main) {
-                    val sharedPref = getSharedPreferences("user_auth", Context.MODE_PRIVATE)
-                    with(sharedPref.edit()) {
-                        putBoolean("is_signed_in", true)
-                        apply()
-                    }
+                    if (user != null) {
+                        Log.d(TAG, "Firebase Auth successful for user: ${user.email}")
+                        val sharedPref = getSharedPreferences("user_auth", Context.MODE_PRIVATE)
+                        with(sharedPref.edit()) {
+                            putBoolean("is_signed_in", true)
+                            apply()
+                        }
 
-                    showToast(if (isNewUser) "Account created with Google" else "Signed in with Google")
-                    navigateToMainActivity()
+                        showToast(if (isNewUser) "Account created with Google" else "Signed in with Google")
+                        navigateToMainActivity()
+                    } else {
+                        Log.e(TAG, "Firebase Auth successful but user is null")
+                        showToast("Authentication error: User data not found")
+                    }
                 }
             } catch (e: Exception) {
+                Log.e(TAG, "Firebase authentication failed", e)
                 withContext(Dispatchers.Main) {
                     showToast("Authentication failed: ${e.message}")
                 }
@@ -259,13 +273,15 @@ class AccountActivity : ComponentActivity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        Log.d(TAG, "onActivityResult: requestCode=$requestCode, resultCode=$resultCode")
 
-        // Pass the activity result back to the Facebook SDK
         callbackManager.onActivityResult(requestCode, resultCode, data)
     }
 
     private fun navigateToMainActivity() {
+        Log.d(TAG, "Navigating to MainActivity")
         val intent = Intent(this, MainActivity::class.java)
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
         startActivity(intent)
         finish()
     }
@@ -286,6 +302,7 @@ class AccountActivity : ComponentActivity() {
     }
 
     private fun showToast(message: String) {
+        Log.d(TAG, message)
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 }
@@ -573,7 +590,6 @@ fun AccountScreen(
                         }
                     }
 
-                    // Social Login Section
                     Spacer(modifier = Modifier.height(16.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -597,7 +613,6 @@ fun AccountScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Google Sign In Button
                     Button(
                         onClick = { onGoogleSignIn() },
                         modifier = Modifier
@@ -628,7 +643,6 @@ fun AccountScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // Facebook Sign In Button
                     Button(
                         onClick = { onFacebookSignIn() },
                         modifier = Modifier
@@ -636,7 +650,7 @@ fun AccountScreen(
                             .height(48.dp),
                         shape = RoundedCornerShape(24.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF1877F2) // Facebook blue
+                            containerColor = Color(0xFF1877F2)
                         )
                     ) {
                         Row(
