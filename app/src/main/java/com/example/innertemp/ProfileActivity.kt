@@ -378,7 +378,7 @@ fun ProfileScreen(
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
                     if (isEditMode) {
                         OutlinedTextField(
@@ -481,7 +481,7 @@ fun ProfileScreen(
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
                     if (isEditMode) {
                         OutlinedTextField(
@@ -667,41 +667,6 @@ fun ProfileScreen(
                     if (isEditMode) "Save" else "Edit Profile",
                     fontSize = 16.sp
                 )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            if (!isEditMode) {
-                Button(
-                    onClick = {
-                        if (isUserSignedIn) {
-                            signOut(context)
-                        } else {
-                            onNavigateToAccount()
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth(0.8f)
-                        .height(48.dp),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isUserSignedIn)
-                            MaterialTheme.colorScheme.error
-                        else
-                            MaterialTheme.colorScheme.secondary
-                    )
-                ) {
-                    Icon(
-                        imageVector = if (isUserSignedIn) Icons.Default.Logout else Icons.Default.Login,
-                        contentDescription = if (isUserSignedIn) "Sign Out" else "Sign In",
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        if (isUserSignedIn) "Sign Out" else "Sign In / Sign Up",
-                        fontSize = 16.sp
-                    )
-                }
             }
 
             Spacer(modifier = Modifier.height(24.dp))

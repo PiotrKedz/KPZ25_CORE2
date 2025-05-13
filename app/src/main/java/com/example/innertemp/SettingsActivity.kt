@@ -1,5 +1,6 @@
 package com.example.innertemp
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -28,6 +30,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,6 +41,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.innertemp.ui.theme.InnerTempTheme
 import android.content.Context
 
@@ -61,6 +65,10 @@ class SettingsActivity : ComponentActivity() {
                             finish()
                             startActivity(intent)
                             overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+                        },
+                        onNavigateToAccount = {
+                            val accountIntent = Intent(this, AccountActivity::class.java)
+                            startActivity(accountIntent)
                         }
                     )
                 }
@@ -71,9 +79,19 @@ class SettingsActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(onBack: () -> Unit, onThemeChanged: () -> Unit) {
+fun SettingsScreen(
+    onBack: () -> Unit,
+    onThemeChanged: () -> Unit,
+    onNavigateToAccount: () -> Unit
+) {
     val context = LocalContext.current
     var isThemeExpanded by remember { mutableStateOf(false) }
+    var isUserSignedIn by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        val authPref = context.getSharedPreferences("user_auth", Context.MODE_PRIVATE)
+        isUserSignedIn = authPref.getBoolean("is_signed_in", false)
+    }
 
     val sharedPref = context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
     var selectedTheme by remember {
@@ -99,6 +117,15 @@ fun SettingsScreen(onBack: () -> Unit, onThemeChanged: () -> Unit) {
             apply()
         }
         pushNotificationsEnabled = enabled
+    }
+
+    fun signOut(context: Context) {
+        val sharedPref = context.getSharedPreferences("user_auth", Context.MODE_PRIVATE)
+        with(sharedPref.edit()) {
+            putBoolean("is_signed_in", false)
+            apply()
+        }
+        isUserSignedIn = false
     }
 
     Scaffold(
@@ -245,6 +272,42 @@ fun SettingsScreen(onBack: () -> Unit, onThemeChanged: () -> Unit) {
                         checked = pushNotificationsEnabled,
                         onCheckedChange = { isChecked ->
                             savePushNotificationPreference(isChecked)
+                        }
+                    )
+                }
+            }
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Account",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    Text(
+                        text = if (isUserSignedIn) "Sign Out" else "Sign In",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 16.sp,
+                        modifier = Modifier.clickable {
+                            if (isUserSignedIn) {
+                                signOut(context)
+                            } else {
+                                onNavigateToAccount()
+                            }
                         }
                     )
                 }
