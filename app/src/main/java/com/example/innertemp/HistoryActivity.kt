@@ -608,6 +608,9 @@ fun TemperatureChart(
     temperatureEntries: List<TemperatureEntry>,
     modifier: Modifier = Modifier
 ) {
+    val typography = MaterialTheme.typography
+    val colors = MaterialTheme.colorScheme
+
     AndroidView(
         modifier = modifier,
         factory = { context ->
@@ -619,12 +622,19 @@ fun TemperatureChart(
                 setPinchZoom(true)
                 setDrawGridBackground(false)
 
+                // Configure legend color to match theme
+                legend.textColor = colors.onSurface.toArgb()
+
                 // Configure axes
                 xAxis.apply {
                     position = XAxis.XAxisPosition.BOTTOM
                     setDrawGridLines(false)
                     granularity = 1f
                     labelCount = 5
+
+                    // Set X-axis label color to match theme
+                    textColor = colors.onSurface.toArgb()
+
                     valueFormatter = object : ValueFormatter() {
                         override fun getFormattedValue(value: Float): String {
                             // Time is already formatted as a string in our TemperatureEntry
@@ -636,8 +646,11 @@ fun TemperatureChart(
                 axisLeft.apply {
                     setDrawGridLines(true)
                     granularity = 0.5f
-                    axisMinimum = 30f  // Minimum temperature
-                    axisMaximum = 100f  // Maximum temperature
+                    axisMinimum = 35f  // Minimum temperature
+                    axisMaximum = 39f  // Maximum temperature
+
+                    // Set Y-axis label color to match theme
+                    textColor = colors.onSurface.toArgb()
 
                     val lowerLimit = com.github.mikephil.charting.components.LimitLine(36.5f)
                     lowerLimit.lineColor = Color.GREEN
@@ -658,17 +671,20 @@ fun TemperatureChart(
             }
 
             val dataSet = LineDataSet(entries, "Temperature (°C)").apply {
-                color = ComposeColor.Blue.toArgb()
-                setCircleColor(ComposeColor.Blue.toArgb())
+                color = colors.primary.toArgb()
+                setCircleColor(colors.primary.toArgb())
                 lineWidth = 2f
                 circleRadius = 3f
                 setDrawValues(false)
                 mode = LineDataSet.Mode.CUBIC_BEZIER
                 cubicIntensity = 0.2f
 
+                // Set dataset label color to match theme
+                valueTextColor = colors.onSurface.toArgb()
+
                 // Fill color under the line
                 setDrawFilled(true)
-                fillColor = ComposeColor.Blue.copy(alpha = 0.3f).toArgb()
+                fillColor = colors.primary.copy(alpha = 0.3f).toArgb()
             }
 
             val lineData = LineData(dataSet)

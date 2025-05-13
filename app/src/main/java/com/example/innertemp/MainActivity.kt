@@ -2,6 +2,7 @@ package com.example.innertemp
 
 import android.Manifest
 import android.bluetooth.BluetoothAdapter
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -13,7 +14,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresPermission
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.History
@@ -39,7 +39,7 @@ private const val TAG = "InnerTemp"
 
 class MainActivity : ComponentActivity() {
     private lateinit var bluetoothManager: BluetoothManager
-    private lateinit var temperatureLogger: TemperatureLogger // Add TemperatureLogger
+    private lateinit var temperatureLogger: TemperatureLogger
     private val _isConnected = mutableStateOf(false)
     private val _temperatureCore = mutableStateOf(0.0)
     private val _temperatureSkin = mutableStateOf(0.0)
@@ -47,6 +47,8 @@ class MainActivity : ComponentActivity() {
     private val _batteryLevel = mutableStateOf(0.0)
     private val _isPaused = mutableStateOf(false)
     private val _isMonitoring = mutableStateOf(false)
+    private val _connectionQuality = mutableStateOf(BluetoothConnectionQuality.DISCONNECTED)
+    private val _themeMode = mutableStateOf(ThemeMode.SYSTEM)
 
     // Core temperature average tracking
     private val _averageTemperatureCore = mutableStateOf(0.0)
@@ -151,9 +153,25 @@ class MainActivity : ComponentActivity() {
         bluetoothManager = BluetoothManager(this)
 
         // Set up callbacks with additional logging
-        bluetoothManager.setOnConnectionStatusChanged { isConnected ->
-            Log.d(TAG, "Connection status changed: $isConnected")
+        bluetoothManager.setOnConnectionStatusChanged { isConnected, signalStrength ->
+            Log.d(TAG, "Connection status changed: $isConnected, Signal strength: $signalStrength")
             _isConnected.value = isConnected
+
+            // Update battery level to 0 if disconnected
+            if (!isConnected) {
+                _batteryLevel.value = 0.0
+            }
+
+            // Update connection quality based on signal strength
+            _connectionQuality.value = if (!isConnected) {
+                BluetoothConnectionQuality.DISCONNECTED
+            } else {
+                when {
+                    signalStrength > -60 -> BluetoothConnectionQuality.GOOD
+                    signalStrength > -80 -> BluetoothConnectionQuality.MEDIUM
+                    else -> BluetoothConnectionQuality.BAD
+                }
+            }
         }
 
         bluetoothManager.setOnMonitoringStatusChanged { isMonitoring ->
@@ -179,6 +197,10 @@ class MainActivity : ComponentActivity() {
             _temperatureCore.value = tempCore
             _batteryLevel.value = battery
 
+            if (_isConnected.value && battery > 0) {
+                Log.d(TAG, "Battery level updated: $battery")
+            }
+
             // Update running average for core temperature if we're monitoring and not paused
             if (_isMonitoring.value && !_isPaused.value && tempCore > 0) {
                 updateAverageTemperature(tempCore)
@@ -189,19 +211,27 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            InnerTempTheme {
+            val themeMode by _themeMode
+            InnerTempTheme(themeMode = themeMode) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
                     AppContent(
                         isConnected = _isConnected,
+                        connectionQuality = _connectionQuality,
                         temperatureCore = _temperatureCore,
                         temperatureSkin = _temperatureSkin,
                         temperatureOutside = _temperatureOutside,
                         batteryLevel = _batteryLevel,
                         isPaused = _isPaused,
                         isMonitoring = _isMonitoring,
+                        themeMode = _themeMode,
+                        onThemeModeChange = { newMode ->
+                            _themeMode.value = newMode
+                            // Optional: Save theme preference
+                            saveThemePreference(newMode)
+                        },
                         onPauseToggle = {
                             Log.d(TAG, "User requested pause toggle")
                             bluetoothManager.togglePause()
@@ -235,6 +265,20 @@ class MainActivity : ComponentActivity() {
             }
         }
         checkPermissions()
+
+        // Load saved theme preference
+        loadThemePreference()
+    }
+
+    private fun saveThemePreference(mode: ThemeMode) {
+        val prefs = getPreferences(Context.MODE_PRIVATE)
+        prefs.edit().putString("theme_mode", mode.name).apply()
+    }
+
+    private fun loadThemePreference() {
+        val prefs = getPreferences(Context.MODE_PRIVATE)
+        val savedMode = prefs.getString("theme_mode", ThemeMode.SYSTEM.name)
+        _themeMode.value = ThemeMode.valueOf(savedMode ?: ThemeMode.SYSTEM.name)
     }
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
@@ -246,6 +290,7 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun AppContent(
         isConnected: State<Boolean>,
+        connectionQuality: State<BluetoothConnectionQuality>,
         temperatureCore: State<Double>,
         temperatureSkin: State<Double>,
         temperatureOutside: State<Double>,
@@ -256,9 +301,12 @@ class MainActivity : ComponentActivity() {
         onMonitoringToggle: () -> Unit,
         onGoToProfile: () -> Unit,
         onGoToHistory: () -> Unit,
+        themeMode: MutableState<ThemeMode>,
+        onThemeModeChange: (ThemeMode) -> Unit,
     ) {
         HomeScreen(
             isConnected = isConnected.value,
+            connectionQuality = connectionQuality.value,
             temperatureOutside = temperatureOutside.value,
             temperatureSkin = temperatureSkin.value,
             temperatureCore = temperatureCore.value,
@@ -270,6 +318,8 @@ class MainActivity : ComponentActivity() {
             onMonitoringToggle = onMonitoringToggle,
             onGoToProfile = onGoToProfile,
             onGoToHistory = onGoToHistory,
+            themeMode = themeMode.value,
+            onThemeModeChange = onThemeModeChange,
         )
     }
 }
@@ -278,6 +328,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun HomeScreen(
     isConnected: Boolean,
+    connectionQuality: BluetoothConnectionQuality,
     temperatureCore: Double,
     temperatureSkin: Double,
     temperatureOutside: Double,
@@ -288,7 +339,9 @@ fun HomeScreen(
     onPauseToggle: () -> Unit,
     onMonitoringToggle: () -> Unit,
     onGoToProfile: () -> Unit,
-    onGoToHistory: () -> Unit
+    onGoToHistory: () -> Unit,
+    themeMode: ThemeMode,
+    onThemeModeChange: (ThemeMode) -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
     val tempColorSkin = when {
@@ -308,7 +361,6 @@ fun HomeScreen(
         else -> Green
     }
 
-    // Get current date for UI display
     val currentDateStr = remember {
         val dateFormat = SimpleDateFormat("dd MMMM yyyy", Locale.getDefault())
         dateFormat.format(Date())
@@ -325,176 +377,209 @@ fun HomeScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onGoToHistory) {
-                        Icon(Icons.Default.History, contentDescription = "History")
+                    Row {
+                        IconButton(onClick = onGoToHistory) {
+                            Icon(Icons.Default.History, contentDescription = "History")
+                        }
+                        IconButton(onClick = onGoToProfile) {
+                            Icon(Icons.Default.Person, contentDescription = "Profile")
+                        }
                     }
                 },
                 actions = {
-                    IconButton(onClick = onGoToProfile) {
-                        Icon(Icons.Default.Person, contentDescription = "Profile")
-                    }
+                    BluetoothStatusInTopBar(
+                        connectionQuality = connectionQuality
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    BatteryLevelIcon(
+                        batteryLevel = batteryLevel,
+                        isConnected = isConnected,
+                    )
+                    // Add Theme Mode Toggle below Battery Icon
+                    Spacer(modifier = Modifier.width(8.dp))
+                    ThemeModeToggle(
+                        currentMode = themeMode,
+                        onThemeModeChanged = onThemeModeChange,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
                 }
             )
-        },
-        content = { paddingValues ->
-            Box(
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            // Date display (no bottom padding)
+            Text(
+                text = currentDateStr,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            // Connection status (right under date, remove padding)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
                 modifier = Modifier
-                    .padding(paddingValues)
-                    .fillMaxSize()
-                    .background(colors.background)
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp)
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                BluetoothConnectivityIcon(
+                    connectionQuality = connectionQuality,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = when {
+                        !isConnected -> "Disconnected"
+                        connectionQuality == BluetoothConnectionQuality.GOOD -> "Connected (Good signal)"
+                        connectionQuality == BluetoothConnectionQuality.MEDIUM -> "Connected (Medium signal)"
+                        else -> "Connected (Weak signal)"
+                    },
+                    color = when {
+                        !isConnected -> colors.error
+                        else -> colors.onSurface
+                    }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(100.dp))
+            // Temperature displays
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Core Temperature
+                Text(
+                    text = "Core Temperature",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 20.sp,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Show current date
-                    Text(
-                        text = currentDateStr,
-                        color = colors.onBackground,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Normal,
-                        modifier = Modifier.padding(bottom = 24.dp)
-                    )
-
-                    Text(
-                        text = "Device Status:",
-                        color = colors.onBackground,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = if (isConnected) "Connected" else "Disconnected",
-                        color = colors.onBackground,
-                        fontSize = 20.sp
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Text(
-                        text = "Battery Level:",
-                        color = colors.onBackground,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = if (isConnected) "${batteryLevel}%" else "-",
-                        color = colors.onBackground,
-                        fontSize = 20.sp
-                    )
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    Text(
-                        text = "Real-Time Temperature:",
-                        color = colors.onBackground,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = if (!isConnected) "-"
-                        else if (!isMonitoring) "Monitoring Stopped"
-                        else if (isPaused) "Paused"
-                        else String.format("%.1f°C", temperatureCore),
-                        color = tempColorCore,
-                        fontSize = 36.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    // Display average core temperature when monitoring
-                    if (isConnected && isMonitoring) {
-                        Spacer(modifier = Modifier.height(16.dp))
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = "Average Core Temperature:",
-                            color = colors.onBackground,
-                            fontSize = 20.sp,
+                            text = String.format("%.1f°C", temperatureCore),
+                            fontSize = 32.sp,
+                            color = tempColorCore,
                             fontWeight = FontWeight.Bold
                         )
-                        Text(
-                            text = if (averageTemperatureCore <= 0) "Calculating..."
-                            else String.format("%.1f°C", averageTemperatureCore),
-                            color = when {
-                                averageTemperatureCore < 36.0 -> Blue
-                                averageTemperatureCore > 38.0 -> Red
-                                else -> Green
-                            },
-                            fontSize = 28.sp,
-                            fontWeight = FontWeight.SemiBold
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Skin Temperature
+                Text(
+                    text = "Skin Temperature",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
+                Text(
+                    text = String.format("%.1f°C", temperatureSkin),
+                    fontSize = 24.sp,
+                    color = tempColorSkin,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Outside Temperature
+                Text(
+                    text = "Outside Temperature",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
+                Text(
+                    text = String.format("%.1f°C", temperatureOutside),
+                    fontSize = 24.sp,
+                    color = tempColorOutside,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // Monitoring Status
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Monitoring Status",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+
+                Text(
+                    text = if (isMonitoring) {
+                        if (isPaused) "Paused" else "Active"
+                    } else "Inactive",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = when {
+                        !isMonitoring -> colors.error
+                        isPaused -> colors.tertiary
+                        else -> Green
+                    },
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(
+                        onClick = onPauseToggle,
+                        enabled = isConnected && isMonitoring,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (isPaused) Green else colors.tertiary
                         )
+                    ) {
+                        Text(text = if (isPaused) "Resume" else "Pause")
                     }
 
-                    // Debug sensor readings
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "Debug Sensor Readings",
-                        color = colors.onBackground,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    Text(
-                        text = "Skin: ${String.format("%.1f°C", temperatureSkin)} | " +
-                                "Outside: ${String.format("%.1f°C", temperatureOutside)}",
-                        color = colors.onBackground.copy(alpha = 0.7f),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Normal
-                    )
-
-                    Spacer(modifier = Modifier.weight(1f))  // Push buttons toward the bottom
-
-                    if (isConnected) {
-                        // Action buttons
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 24.dp),
-                            horizontalArrangement = Arrangement.SpaceEvenly
-                        ) {
-                            // Start/Stop Button
-                            Button(
-                                onClick = onMonitoringToggle,
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (isMonitoring) Red else Green
-                                ),
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .padding(end = 8.dp)
-                                    .height(56.dp)
-                            ) {
-                                Text(
-                                    text = if (isMonitoring) "Stop" else "Start",
-                                    color = colors.onPrimary,
-                                    fontSize = 18.sp
-                                )
-                            }
-
-                            // Pause Button (only enabled when monitoring is active)
-                            Button(
-                                onClick = onPauseToggle,
-                                enabled = isMonitoring,
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = colors.primary,
-                                    disabledContainerColor = colors.primary.copy(alpha = 0.5f)
-                                ),
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .padding(start = 8.dp)
-                                    .height(56.dp)
-                            ) {
-                                Text(
-                                    text = if (isPaused) "Resume" else "Pause",
-                                    color = if (isMonitoring) colors.onPrimary
-                                    else colors.onPrimary.copy(alpha = 0.5f),
-                                    fontSize = 18.sp
-                                )
-                            }
-                        }
+                    Button(
+                        onClick = onMonitoringToggle,
+                        enabled = isConnected,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (isMonitoring) Red else Green
+                        )
+                    ) {
+                        Text(text = if (isMonitoring) "Stop" else "Start")
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // Status message at bottom
+            Text(
+                text = when {
+                    !isConnected -> "Please connect a temperature sensor"
+                    !isMonitoring -> "Press Start to begin monitoring"
+                    isPaused -> "Monitoring is paused"
+                    else -> "Monitoring in progress"
+                },
+                color = when {
+                    !isConnected -> colors.error
+                    !isMonitoring -> colors.onSurfaceVariant
+                    isPaused -> colors.tertiary
+                    else -> Green
+                },
+                fontSize = 14.sp,
+                textAlign = TextAlign.Center
+            )
         }
-    )
+    }
 }
 
 @Preview(showBackground = true)
@@ -503,17 +588,20 @@ fun HomeScreenPreview() {
     InnerTempTheme {
         HomeScreen(
             isConnected = true,
-            temperatureCore = 36.2,
-            temperatureSkin = 36.2,
-            temperatureOutside = 36.2,
-            averageTemperatureCore = 36.4,
-            batteryLevel = 75.0,
+            connectionQuality = BluetoothConnectionQuality.GOOD,
+            temperatureCore = 37.2,
+            temperatureSkin = 36.8,
+            temperatureOutside = 35.5,
+            averageTemperatureCore = 37.1,
+            batteryLevel = 78.0,
             isPaused = false,
             isMonitoring = true,
-            onPauseToggle = {},
-            onMonitoringToggle = {},
-            onGoToProfile = {},
-            onGoToHistory = {},
+            onPauseToggle = { },
+            onMonitoringToggle = { },
+            onGoToProfile = { },
+            onGoToHistory = { },
+            themeMode = ThemeMode.SYSTEM,
+            onThemeModeChange = { }
         )
     }
 }
