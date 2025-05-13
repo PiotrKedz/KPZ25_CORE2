@@ -1,13 +1,13 @@
 package com.example.innertemp
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -31,16 +31,14 @@ import androidx.core.app.ActivityCompat
 import androidx.lifecycle.Lifecycle
 import com.example.innertemp.ui.theme.Blue
 import com.example.innertemp.ui.theme.Green
-import com.example.innertemp.ui.theme.InnerTempTheme
 import com.example.innertemp.ui.theme.Red
+import com.example.innertemp.ui.theme.InnerTempTheme
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.filled.Close
-
-private const val TAG = "InnerTemp"
 
 class MainActivity : ComponentActivity() {
     private lateinit var bluetoothManager: BluetoothManager
@@ -53,10 +51,7 @@ class MainActivity : ComponentActivity() {
     private val _isPaused = mutableStateOf(false)
     private val _isMonitoring = mutableStateOf(false)
     private val _connectionQuality = mutableStateOf(BluetoothConnectionQuality.DISCONNECTED)
-    private val _themeMode = mutableStateOf(ThemeMode.SYSTEM)
     private var useDarkTheme by mutableStateOf(false)
-
-    // Core temperature average tracking
     private val _averageTemperatureCore = mutableStateOf(0.0)
     private var tempCoreSamples = mutableListOf<Double>()
     private var totalSamples = 0
@@ -87,7 +82,6 @@ class MainActivity : ComponentActivity() {
             val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
             enableBtLauncher.launch(enableBtIntent)
         } else {
-            Log.d(TAG, "Starting BLE scan...")
             bluetoothManager.startBleScan()
         }
     }
@@ -116,59 +110,40 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    /**
-     * Updates the running average of core temperature
-     * Uses a cumulative moving average approach
-     */
     private fun updateAverageTemperature(newValue: Double) {
-        if (newValue <= 0) return  // Skip invalid readings
+        if (newValue <= 0) return
 
         tempCoreSamples.add(newValue)
         totalSamples++
 
-        // Calculate running average
         val sum = tempCoreSamples.sum()
         _averageTemperatureCore.value = String.format("%.1f", sum / totalSamples).toDouble()
 
-        // Optionally, limit the number of samples stored to prevent excessive memory usage
-        if (tempCoreSamples.size > 100) {  // Keep only the most recent 100 samples
+        if (tempCoreSamples.size > 100) {
             tempCoreSamples.removeAt(0)
         }
-
-        Log.d(TAG, "Average core temp: ${_averageTemperatureCore.value}°C (from $totalSamples samples)")
     }
 
-    /**
-     * Resets the temperature average calculation
-     */
     private fun resetAverageTemperature() {
         tempCoreSamples.clear()
         totalSamples = 0
         _averageTemperatureCore.value = 0.0
-        Log.d(TAG, "Average temperature tracking reset")
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // Initialize the temperature logger
         temperatureLogger = TemperatureLogger(this)
-
-        // Initialize the Bluetooth manager
         bluetoothManager = BluetoothManager(this)
 
-        // Set up callbacks with additional logging
         bluetoothManager.setOnConnectionStatusChanged { isConnected, signalStrength ->
-            Log.d(TAG, "Connection status changed: $isConnected, Signal strength: $signalStrength")
             _isConnected.value = isConnected
 
-            // Update battery level to 0 if disconnected
             if (!isConnected) {
                 _batteryLevel.value = 0.0
             }
 
-            // Update connection quality based on signal strength
             _connectionQuality.value = if (!isConnected) {
                 BluetoothConnectionQuality.DISCONNECTED
             } else {
@@ -181,43 +156,30 @@ class MainActivity : ComponentActivity() {
         }
 
         bluetoothManager.setOnMonitoringStatusChanged { isMonitoring ->
-            Log.d(TAG, "Monitoring status changed: $isMonitoring")
             _isMonitoring.value = isMonitoring
             if (isMonitoring) {
-                // Start a new logging session when monitoring begins
                 temperatureLogger.startNewSession()
                 resetAverageTemperature()
             }
         }
 
         bluetoothManager.setOnPauseStatusChanged { isPaused ->
-            Log.d(TAG, "Pause status changed: $isPaused")
             _isPaused.value = isPaused
         }
 
         bluetoothManager.setOnDataReceived { tempSkin, tempOutside, tempCore, battery ->
-            Log.d(TAG, "Received data - Core: $tempCore, Skin: $tempSkin, Outside: $tempOutside, Battery: $battery")
-
             _temperatureSkin.value = tempSkin
             _temperatureOutside.value = tempOutside
             _temperatureCore.value = tempCore
             _batteryLevel.value = battery
 
-            if (_isConnected.value && battery > 0) {
-                Log.d(TAG, "Battery level updated: $battery")
-            }
-
-            // Update running average for core temperature if we're monitoring and not paused
             if (_isMonitoring.value && !_isPaused.value && tempCore > 0) {
                 updateAverageTemperature(tempCore)
-
-                // Log the temperature to the file system
                 temperatureLogger.logTemperature(tempCore)
             }
         }
-
+        loadThemePreference()
         setContent {
-            val themeMode by _themeMode
             InnerTempTheme(darkTheme = useDarkTheme) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
@@ -232,14 +194,7 @@ class MainActivity : ComponentActivity() {
                         batteryLevel = _batteryLevel,
                         isPaused = _isPaused,
                         isMonitoring = _isMonitoring,
-                        themeMode = _themeMode,
-                        onThemeModeChange = { newMode ->
-                            _themeMode.value = newMode
-                            // Optional: Save theme preference
-                            saveThemePreference(newMode)
-                        },
                         onPauseToggle = {
-                            Log.d(TAG, "User requested pause toggle")
                             bluetoothManager.togglePause()
                             Toast.makeText(
                                 this,
@@ -248,7 +203,6 @@ class MainActivity : ComponentActivity() {
                             ).show()
                         },
                         onMonitoringToggle = {
-                            Log.d(TAG, "User requested monitoring toggle")
                             bluetoothManager.toggleMonitoring()
                             Toast.makeText(
                                 this,
@@ -259,56 +213,37 @@ class MainActivity : ComponentActivity() {
                         onGoToProfile = {
                             val intent = Intent(this, ProfileActivity::class.java)
                             startActivity(intent)
-                            overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right)
                         },
                         onGoToHistory = {
                             val intent = Intent(this, HistoryActivity::class.java)
                             startActivity(intent)
-                            overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
                         },
                     )
                 }
             }
         }
+
         checkPermissions()
+
+        // Observer to update theme when returning to activity
         lifecycle.addObserver(LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                val currentTheme = getSharedPreferences("app_settings", Context.MODE_PRIVATE)
-                    .getString("theme", "Light") ?: "Light"
+                val sharedPref = getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+                val currentTheme = sharedPref.getString("theme", "Light") ?: "Light"
                 val shouldUseDarkTheme = currentTheme == "Dark"
 
                 if (shouldUseDarkTheme != useDarkTheme) {
                     useDarkTheme = shouldUseDarkTheme
-                    onThemeChanged()
+                    recreate() // Use recreate() instead of custom onThemeChanged() method
                 }
             }
         })
-
-
-        // Load saved theme preference
-        loadThemePreference()
-    }
-
-    private fun saveThemePreference(mode: ThemeMode) {
-        val prefs = getPreferences(Context.MODE_PRIVATE)
-        prefs.edit().putString("theme_mode", mode.name).apply()
     }
 
     private fun loadThemePreference() {
-        val prefs = getPreferences(Context.MODE_PRIVATE)
-        val savedMode = prefs.getString("theme_mode", ThemeMode.SYSTEM.name)
-        _themeMode.value = ThemeMode.valueOf(savedMode ?: ThemeMode.SYSTEM.name)
         val sharedPref = getSharedPreferences("app_settings", Context.MODE_PRIVATE)
         val savedTheme = sharedPref.getString("theme", "Light") ?: "Light"
         useDarkTheme = savedTheme == "Dark"
-        Log.d(TAG, "Loaded theme preference: $savedTheme")
-    }
-
-    private fun onThemeChanged() {
-        Log.d(TAG, "Theme changed, recreating activity")
-        finish()
-        startActivity(intent)
-        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
     }
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
@@ -331,8 +266,6 @@ class MainActivity : ComponentActivity() {
         onMonitoringToggle: () -> Unit,
         onGoToProfile: () -> Unit,
         onGoToHistory: () -> Unit,
-        themeMode: MutableState<ThemeMode>,
-        onThemeModeChange: (ThemeMode) -> Unit,
     ) {
         HomeScreen(
             isConnected = isConnected.value,
@@ -340,7 +273,6 @@ class MainActivity : ComponentActivity() {
             temperatureOutside = temperatureOutside.value,
             temperatureSkin = temperatureSkin.value,
             temperatureCore = temperatureCore.value,
-            averageTemperatureCore = _averageTemperatureCore.value,
             batteryLevel = batteryLevel.value,
             isPaused = isPaused.value,
             isMonitoring = isMonitoring.value,
@@ -348,8 +280,6 @@ class MainActivity : ComponentActivity() {
             onMonitoringToggle = onMonitoringToggle,
             onGoToProfile = onGoToProfile,
             onGoToHistory = onGoToHistory,
-            themeMode = themeMode.value,
-            onThemeModeChange = onThemeModeChange,
         )
     }
 }
@@ -362,7 +292,6 @@ fun HomeScreen(
     temperatureCore: Double,
     temperatureSkin: Double,
     temperatureOutside: Double,
-    averageTemperatureCore: Double,
     batteryLevel: Double,
     isPaused: Boolean,
     isMonitoring: Boolean,
@@ -370,19 +299,13 @@ fun HomeScreen(
     onMonitoringToggle: () -> Unit,
     onGoToProfile: () -> Unit,
     onGoToHistory: () -> Unit,
-    themeMode: ThemeMode,
-    onThemeModeChange: (ThemeMode) -> Unit,
 ) {
-    // State for developer menu
     var showDevMenu by remember { mutableStateOf(false) }
-    var homeTitleClickCount by remember { mutableStateOf(0) }
-
-    // Mock states for dev menu - initialize with actual values but persist changes
+    var homeTitleClickCount by remember { mutableIntStateOf(0) }
     var mockIsConnected by remember { mutableStateOf(isConnected) }
-    var mockTemperatureCore by remember { mutableStateOf(temperatureCore) }
-    var mockBatteryLevel by remember { mutableStateOf(batteryLevel) }
+    var mockTemperatureCore by remember { mutableDoubleStateOf(temperatureCore) }
+    var mockBatteryLevel by remember { mutableDoubleStateOf(batteryLevel) }
 
-    // Update mock states when real values change and dev menu is not active
     LaunchedEffect(isConnected, temperatureCore, batteryLevel) {
         if (!showDevMenu) {
             mockIsConnected = isConnected
@@ -390,12 +313,9 @@ fun HomeScreen(
             mockBatteryLevel = batteryLevel
         }
     }
-
-    // Always use mock values (they'll be synced with real values when dev menu is not active)
     val effectiveIsConnected = mockIsConnected
     val effectiveTemperatureCore = mockTemperatureCore
     val effectiveBatteryLevel = mockBatteryLevel
-
     val colors = MaterialTheme.colorScheme
     val tempColorSkin = when {
         temperatureSkin < 36.0 -> Blue
@@ -469,14 +389,11 @@ fun HomeScreen(
                     .padding(innerPadding),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                // Date display (no bottom padding)
                 Text(
                     text = currentDateStr,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
-
-                // Connection status (right under date, remove padding)
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center,
@@ -504,12 +421,10 @@ fun HomeScreen(
                 }
 
                 Spacer(modifier = Modifier.height(100.dp))
-                // Temperature displays
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Core Temperature
                     Text(
                         text = "Core Temperature",
                         fontWeight = FontWeight.Bold,
@@ -531,10 +446,7 @@ fun HomeScreen(
                             )
                         }
                     }
-
                     Spacer(modifier = Modifier.height(16.dp))
-
-                    // Skin Temperature
                     Text(
                         text = "Skin Temperature",
                         fontWeight = FontWeight.Bold,
@@ -546,10 +458,7 @@ fun HomeScreen(
                         color = tempColorSkin,
                         fontWeight = FontWeight.Bold
                     )
-
                     Spacer(modifier = Modifier.height(16.dp))
-
-                    // Outside Temperature
                     Text(
                         text = "Outside Temperature",
                         fontWeight = FontWeight.Bold,
@@ -562,10 +471,7 @@ fun HomeScreen(
                         fontWeight = FontWeight.Bold
                     )
                 }
-
                 Spacer(modifier = Modifier.height(32.dp))
-
-                // Monitoring Status
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
@@ -603,7 +509,6 @@ fun HomeScreen(
                         ) {
                             Text(text = if (isPaused) "Resume" else "Pause")
                         }
-
                         Button(
                             onClick = onMonitoringToggle,
                             enabled = effectiveIsConnected,
@@ -615,10 +520,7 @@ fun HomeScreen(
                         }
                     }
                 }
-
                 Spacer(modifier = Modifier.height(32.dp))
-
-                // Status message at bottom
                 Text(
                     text = when {
                         !effectiveIsConnected -> "Please connect a temperature sensor"
@@ -636,8 +538,6 @@ fun HomeScreen(
                     textAlign = TextAlign.Center
                 )
             }
-
-            // Developer Menu
             if (showDevMenu) {
                 DeveloperMenu(
                     isConnected = mockIsConnected,
@@ -653,6 +553,7 @@ fun HomeScreen(
     }
 }
 
+@SuppressLint("DefaultLocale")
 @Composable
 fun DeveloperMenu(
     isConnected: Boolean,
@@ -664,7 +565,6 @@ fun DeveloperMenu(
     onClose: () -> Unit
 ) {
     val backgroundColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
-
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -699,9 +599,7 @@ fun DeveloperMenu(
                 }
             }
 
-            Divider(modifier = Modifier.padding(vertical = 8.dp))
-
-            // Mock device connection status
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -723,8 +621,6 @@ fun DeveloperMenu(
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-
-            // Core temperature slider
             Text(
                 text = "Core Temperature: ${String.format("%.1f°C", temperatureCore)}",
                 modifier = Modifier.padding(bottom = 4.dp)
@@ -737,8 +633,6 @@ fun DeveloperMenu(
             )
 
             Spacer(modifier = Modifier.height(16.dp))
-
-            // Battery level slider
             Text(
                 text = "Battery Level: ${String.format("%.0f%%", batteryLevel)}",
                 modifier = Modifier.padding(bottom = 4.dp)
@@ -751,8 +645,6 @@ fun DeveloperMenu(
             )
 
             Spacer(modifier = Modifier.height(32.dp))
-
-            // Close button with text
             Button(
                 onClick = onClose,
                 modifier = Modifier
@@ -783,7 +675,6 @@ fun HomeScreenPreview() {
             temperatureCore = 37.2,
             temperatureSkin = 36.8,
             temperatureOutside = 35.5,
-            averageTemperatureCore = 37.1,
             batteryLevel = 78.0,
             isPaused = false,
             isMonitoring = true,
@@ -791,8 +682,6 @@ fun HomeScreenPreview() {
             onMonitoringToggle = { },
             onGoToProfile = { },
             onGoToHistory = { },
-            themeMode = ThemeMode.SYSTEM,
-            onThemeModeChange = { }
         )
     }
 }

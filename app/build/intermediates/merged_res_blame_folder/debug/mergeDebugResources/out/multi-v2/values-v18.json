@@ -4,7 +4,7 @@
             "outputFile": "com.example.innertemp.app-mergeDebugResources-69:/values-v18/values-v18.xml",
             "map": [
                 {
-                    "source": "C:\\Users\\User\\.gradle\\caches\\8.11.1\\transforms\\0ecf84f3f8e3a9739afc0c068bfdc1c2\\transformed\\appcompat-1.7.0\\res\\values-v18\\values-v18.xml",
+                    "source": "C:\\Users\\Administrator\\.gradle\\caches\\8.11.1\\transforms\\0ecf84f3f8e3a9739afc0c068bfdc1c2\\transformed\\appcompat-1.7.0\\res\\values-v18\\values-v18.xml",
                     "from": {
                         "startLines": "2",
                         "startColumns": "4",

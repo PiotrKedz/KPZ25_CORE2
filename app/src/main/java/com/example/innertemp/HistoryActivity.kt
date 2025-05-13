@@ -12,7 +12,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.innertemp.ui.theme.InnerTempTheme
 import androidx.compose.material.icons.Icons
@@ -28,10 +27,7 @@ import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
 import com.github.mikephil.charting.components.XAxis
-import com.github.mikephil.charting.components.YAxis
 import com.github.mikephil.charting.formatter.ValueFormatter
-import java.util.concurrent.TimeUnit
-import kotlinx.coroutines.*
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.ui.graphics.toArgb
@@ -40,29 +36,52 @@ import androidx.compose.foundation.border
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.graphics.Color as ComposeColor
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import java.io.File
+import android.content.Context
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import com.example.innertemp.ui.theme.Blue
+import com.example.innertemp.ui.theme.Green
+import com.example.innertemp.ui.theme.Red
 
 
 class HistoryActivity : AppCompatActivity() {
     private lateinit var temperatureLogger: TemperatureLogger
+    private var useDarkTheme by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         supportActionBar?.hide()
 
-        // Initialize the temperature logger
         temperatureLogger = TemperatureLogger(this)
+        loadThemePreference()
 
         setContent {
-            InnerTempTheme {
+            InnerTempTheme(darkTheme = useDarkTheme) {
                 HistoryScreen(
                     onBack = { finish() },
                     temperatureLogger = temperatureLogger
                 )
             }
         }
+
+        lifecycle.addObserver(LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                val sharedPref = getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+                val currentTheme = sharedPref.getString("theme", "Light") ?: "Light"
+                val shouldUseDarkTheme = currentTheme == "Dark"
+
+                if (shouldUseDarkTheme != useDarkTheme) {
+                    useDarkTheme = shouldUseDarkTheme
+                    recreate()
+                }
+            }
+        })
+    }
+
+    private fun loadThemePreference() {
+        val sharedPref = getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+        val savedTheme = sharedPref.getString("theme", "Light") ?: "Light"
+        useDarkTheme = savedTheme == "Dark"
     }
 }
 
@@ -122,17 +141,13 @@ fun HistoryContent(
     modifier: Modifier,
     temperatureLogger: TemperatureLogger
 ) {
-    // Get current month and year
     val currentDate = LocalDate.now()
     var selectedMonth by remember { mutableStateOf(currentDate.monthValue) }
     var selectedYear by remember { mutableStateOf(currentDate.year) }
-
-    // Get days in the selected month
     val localDate = LocalDate.of(selectedYear, selectedMonth, 1)
     val daysInMonth = localDate.month.length(localDate.isLeapYear)
     val firstDayOfMonth = localDate.dayOfWeek.value % 7  // Sunday = 0, Monday = 1, etc.
 
-    // Get data for days with temperature readings
     val daysWithData = remember(selectedMonth, selectedYear) {
         temperatureLogger.getDaysWithDataInMonth(selectedYear, selectedMonth).toList()
     }
@@ -147,23 +162,19 @@ fun HistoryContent(
     // Update selected day data when day changes
     LaunchedEffect(selectedDay, selectedMonth, selectedYear) {
         selectedDay?.let { day ->
-            // Get all data for the selected day (across all sessions)
             selectedDayData =
                 temperatureLogger.getTemperatureDataForDate(selectedYear, selectedMonth, day)
             selectedDayStats =
                 temperatureLogger.getTemperatureStatsForDate(selectedYear, selectedMonth, day)
 
-            // Get all sessions for the selected day
             selectedDaySessions =
                 temperatureLogger.getSessionsForDate(selectedYear, selectedMonth, day)
 
-            // Reset selected session when day changes
             selectedSession = null
             selectedSessionData = null
         }
     }
 
-    // Update selected session data when session changes
     LaunchedEffect(selectedSession) {
         if (selectedDay != null && selectedSession != null) {
             val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
@@ -178,7 +189,6 @@ fun HistoryContent(
     Column(
         modifier = modifier.padding(16.dp)
     ) {
-        // Header for month and year navigation (not scrollable)
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -224,13 +234,11 @@ fun HistoryContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Scrollable content
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
         ) {
-            // Days of week header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
@@ -250,7 +258,6 @@ fun HistoryContent(
 
             val rows = (daysInMonth + firstDayOfMonth + 6) / 7
             val gridHeight = (rows * 48 + 20).dp
-
 
             LazyVerticalGrid(
                 columns = GridCells.Fixed(7),
@@ -287,7 +294,6 @@ fun HistoryContent(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Show temperature chart and details for selected day
             selectedDay?.let { day ->
                 Text(
                     text = "Data for ${Month.of(selectedMonth).name} $day, $selectedYear",
@@ -295,7 +301,6 @@ fun HistoryContent(
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
 
-                // Display sessions for the selected day
                 if (selectedDaySessions.isNotEmpty()) {
                     Text(
                         text = "Sessions (${selectedDaySessions.size}):",
@@ -304,14 +309,12 @@ fun HistoryContent(
                         modifier = Modifier.padding(vertical = 8.dp)
                     )
 
-                    // List of sessions with clickable items
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 8.dp)
                     ) {
                         selectedDaySessions.forEachIndexed { index, sessionId ->
-                            // Format session time from ID (format is yyyyMMdd_HHmmss)
                             val formattedTime = try {
                                 val timeStamp = sessionId.substringAfter("_")
                                 val hour = timeStamp.substring(0, 2)
@@ -354,7 +357,6 @@ fun HistoryContent(
                                 }
                             }
 
-                            // Show session data if selected
                             if (selectedSession == sessionId) {
                                 val tempData = selectedSessionData
                                 if (tempData != null && tempData.isNotEmpty()) {
@@ -369,7 +371,6 @@ fun HistoryContent(
                                             .padding(vertical = 8.dp)
                                     )
 
-                                    // Calculate and display session stats
                                     var min = Double.MAX_VALUE
                                     var max = Double.MIN_VALUE
                                     var sum = 0.0
@@ -412,7 +413,7 @@ fun HistoryContent(
                                                     Text(
                                                         text = String.format("%.1f°C", min),
                                                         style = MaterialTheme.typography.bodyLarge,
-                                                        color = ComposeColor.Blue
+                                                        color = Blue
                                                     )
                                                 }
 
@@ -424,7 +425,7 @@ fun HistoryContent(
                                                     Text(
                                                         text = String.format("%.1f°C", avg),
                                                         style = MaterialTheme.typography.bodyLarge,
-                                                        color = ComposeColor.Green
+                                                        color = Green
                                                     )
                                                 }
 
@@ -436,7 +437,7 @@ fun HistoryContent(
                                                     Text(
                                                         text = String.format("%.1f°C", max),
                                                         style = MaterialTheme.typography.bodyLarge,
-                                                        color = ComposeColor.Red
+                                                        color = Red
                                                     )
                                                 }
                                             }
@@ -460,7 +461,6 @@ fun HistoryContent(
                         }
                     }
 
-                    // Day summary statistics
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Text(
@@ -493,7 +493,7 @@ fun HistoryContent(
                                         Text(
                                             text = String.format("%.1f°C", stats.lowest),
                                             style = MaterialTheme.typography.bodyLarge,
-                                            color = ComposeColor.Blue
+                                            color = Blue
                                         )
                                     }
 
@@ -505,7 +505,7 @@ fun HistoryContent(
                                         Text(
                                             text = String.format("%.1f°C", stats.average),
                                             style = MaterialTheme.typography.bodyLarge,
-                                            color = ComposeColor.Green
+                                            color = Green
                                         )
                                     }
 
@@ -517,7 +517,7 @@ fun HistoryContent(
                                         Text(
                                             text = String.format("%.1f°C", stats.highest),
                                             style = MaterialTheme.typography.bodyLarge,
-                                            color = ComposeColor.Red
+                                            color = Red
                                         )
                                     }
                                 }
@@ -533,7 +533,6 @@ fun HistoryContent(
                     }
 
                 } else {
-                    // No sessions available for selected day
                     Text(
                         text = "No temperature data available for ${Month.of(selectedMonth).name} $day, $selectedYear",
                         style = MaterialTheme.typography.bodyLarge,
@@ -541,7 +540,6 @@ fun HistoryContent(
                     )
                 }
             } ?: run {
-                // No day selected
                 Text(
                     text = "Select a day to view temperature data",
                     style = MaterialTheme.typography.bodyLarge,
@@ -552,15 +550,11 @@ fun HistoryContent(
                 )
             }
 
-            // Add bottom padding to ensure content at the bottom is visible when scrolled
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }
 
-/**
- * DayCell component for displaying individual calendar days
- */
 @Composable
 fun DayCell(
     day: Int,
@@ -600,15 +594,12 @@ fun DayCell(
     }
 }
 
-/**
- * TemperatureChart component for visualizing temperature data
- */
 @Composable
 fun TemperatureChart(
     temperatureEntries: List<TemperatureEntry>,
     modifier: Modifier = Modifier
 ) {
-    val typography = MaterialTheme.typography
+    MaterialTheme.typography
     val colors = MaterialTheme.colorScheme
 
     AndroidView(
@@ -622,22 +613,18 @@ fun TemperatureChart(
                 setPinchZoom(true)
                 setDrawGridBackground(false)
 
-                // Configure legend color to match theme
                 legend.textColor = colors.onSurface.toArgb()
 
-                // Configure axes
                 xAxis.apply {
                     position = XAxis.XAxisPosition.BOTTOM
                     setDrawGridLines(false)
                     granularity = 1f
                     labelCount = 5
 
-                    // Set X-axis label color to match theme
                     textColor = colors.onSurface.toArgb()
 
                     valueFormatter = object : ValueFormatter() {
                         override fun getFormattedValue(value: Float): String {
-                            // Time is already formatted as a string in our TemperatureEntry
                             return temperatureEntries.getOrNull(value.toInt())?.time ?: ""
                         }
                     }
@@ -646,10 +633,9 @@ fun TemperatureChart(
                 axisLeft.apply {
                     setDrawGridLines(true)
                     granularity = 0.5f
-                    axisMinimum = 35f  // Minimum temperature
-                    axisMaximum = 39f  // Maximum temperature
+                    axisMinimum = 35f
+                    axisMaximum = 39f
 
-                    // Set Y-axis label color to match theme
                     textColor = colors.onSurface.toArgb()
 
                     val lowerLimit = com.github.mikephil.charting.components.LimitLine(36.5f)
@@ -660,12 +646,10 @@ fun TemperatureChart(
                     upperLimit.lineColor = Color.GREEN
                     upperLimit.lineWidth = 1f
                 }
-
                 axisRight.isEnabled = false
             }
         },
         update = { chart ->
-            // Create entries with index as X and temperature as Y
             val entries = temperatureEntries.mapIndexed { index, entry ->
                 Entry(index.toFloat(), entry.temperature.toFloat())
             }
@@ -679,17 +663,15 @@ fun TemperatureChart(
                 mode = LineDataSet.Mode.CUBIC_BEZIER
                 cubicIntensity = 0.2f
 
-                // Set dataset label color to match theme
                 valueTextColor = colors.onSurface.toArgb()
 
-                // Fill color under the line
                 setDrawFilled(true)
                 fillColor = colors.primary.copy(alpha = 0.3f).toArgb()
             }
 
             val lineData = LineData(dataSet)
             chart.data = lineData
-            chart.invalidate() // Refresh chart
+            chart.invalidate()
         }
     )
 }
