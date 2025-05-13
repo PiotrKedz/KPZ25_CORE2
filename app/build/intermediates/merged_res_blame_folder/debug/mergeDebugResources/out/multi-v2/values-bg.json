@@ -1,8 +1,25 @@
 {
     "logs": [
         {
-            "outputFile": "com.example.innertemp.app-mergeDebugResources-68:/values-bg/values-bg.xml",
+            "outputFile": "com.example.innertemp.app-mergeDebugResources-69:/values-bg/values-bg.xml",
             "map": [
+                {
+                    "source": "C:\\Users\\User\\.gradle\\caches\\8.11.1\\transforms\\3bb084e7c6899b308289a45c17d1bdcc\\transformed\\credentials-1.3.0\\res\\values-bg\\values-bg.xml",
+                    "from": {
+                        "startLines": "2,3",
+                        "startColumns": "4,4",
+                        "startOffsets": "55,165",
+                        "endColumns": "109,119",
+                        "endOffsets": "160,280"
+                    },
+                    "to": {
+                        "startLines": "33,34",
+                        "startColumns": "4,4",
+                        "startOffsets": "3064,3174",
+                        "endColumns": "109,119",
+                        "endOffsets": "3169,3289"
+                    }
+                },
                 {
                     "source": "C:\\Users\\User\\.gradle\\caches\\8.11.1\\transforms\\acac392e1141dc1b96de240e8e40421d\\transformed\\play-services-base-18.5.0\\res\\values-bg\\values.xml",
                     "from": {
@@ -54,23 +71,6 @@
                         "endLines": "5,36,37,38,39,40,48,49,50,75,76,77,81,84,142,143,144,145,146,147,148,149,150,151,152,153,154,156,157,158,159,160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,196,197,198,199,200,203,207,208,210",
                         "endColumns": "12,78,78,82,121,109,94,132,88,62,65,96,79,61,88,62,64,58,72,62,53,127,56,61,53,72,142,83,77,92,81,87,135,87,87,135,84,76,52,50,65,74,75,70,78,76,75,76,73,111,90,74,90,91,73,86,90,54,81,65,82,85,61,63,62,69,116,111,110,109,56,54,85,90,75,78",
                         "endOffsets": "310,3456,3535,3618,3740,3850,4686,4819,4908,7875,7941,8038,8448,8677,15169,15232,15297,15356,15429,15492,15546,15674,15731,15793,15847,15920,16063,16236,16314,16407,16489,16577,16713,16801,16889,17025,17110,17187,17240,17291,17357,17432,17508,17579,17658,17735,17811,17888,17962,18074,18165,18240,18331,18423,18497,18584,18675,18730,18812,18878,18961,19047,19109,19173,19236,19306,19423,19535,19646,19756,19813,19868,20129,20476,20552,20703"
-                    }
-                },
-                {
-                    "source": "C:\\Users\\User\\.gradle\\caches\\8.11.1\\transforms\\fa02d48ed4095f06bb59530ee3b453f2\\transformed\\credentials-1.2.0-rc01\\res\\values-bg\\values-bg.xml",
-                    "from": {
-                        "startLines": "2,3",
-                        "startColumns": "4,4",
-                        "startOffsets": "55,165",
-                        "endColumns": "109,119",
-                        "endOffsets": "160,280"
-                    },
-                    "to": {
-                        "startLines": "33,34",
-                        "startColumns": "4,4",
-                        "startOffsets": "3064,3174",
-                        "endColumns": "109,119",
-                        "endOffsets": "3169,3289"
                     }
                 },
                 {

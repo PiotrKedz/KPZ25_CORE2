@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.example.innertemp.app-mergeDebugResources-68:/values-mn/values-mn.xml",
+            "outputFile": "com.example.innertemp.app-mergeDebugResources-69:/values-mn/values-mn.xml",
             "map": [
                 {
                     "source": "C:\\Users\\User\\.gradle\\caches\\8.11.1\\transforms\\0ecf84f3f8e3a9739afc0c068bfdc1c2\\transformed\\appcompat-1.7.0\\res\\values-mn\\values-mn.xml",
@@ -72,6 +72,23 @@
                     }
                 },
                 {
+                    "source": "C:\\Users\\User\\.gradle\\caches\\8.11.1\\transforms\\3bb084e7c6899b308289a45c17d1bdcc\\transformed\\credentials-1.3.0\\res\\values-mn\\values-mn.xml",
+                    "from": {
+                        "startLines": "2,3",
+                        "startColumns": "4,4",
+                        "startOffsets": "55,166",
+                        "endColumns": "110,113",
+                        "endOffsets": "161,275"
+                    },
+                    "to": {
+                        "startLines": "33,34",
+                        "startColumns": "4,4",
+                        "startOffsets": "3007,3118",
+                        "endColumns": "110,113",
+                        "endOffsets": "3113,3227"
+                    }
+                },
+                {
                     "source": "C:\\Users\\User\\.gradle\\caches\\8.11.1\\transforms\\7c8a089402c732bb12349b48e2a3d23c\\transformed\\foundation-release\\res\\values-mn\\values-mn.xml",
                     "from": {
                         "startLines": "2,3,4",
@@ -105,23 +122,6 @@
                         "endLines": "5,36,37,38,39,40,48,49,50,75,76,77,81,84,142,143,144,145,146,147,148,149,150,151,152,153,154,156,157,158,159,160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,196,197,198,199,200,203,207,208,210",
                         "endColumns": "12,78,76,78,86,84,97,118,84,60,64,97,80,58,92,61,62,57,70,61,53,120,56,60,53,70,132,83,79,95,82,82,132,81,77,131,89,79,53,50,65,70,77,70,78,74,77,79,82,104,87,78,89,92,73,69,90,53,79,66,83,84,61,63,62,70,103,114,96,113,57,54,83,86,75,81",
                         "endOffsets": "310,3390,3467,3546,3633,3718,4551,4670,4755,7585,7650,7748,8146,8385,14732,14794,14857,14915,14986,15048,15102,15223,15280,15341,15395,15466,15599,15778,15858,15954,16037,16120,16253,16335,16413,16545,16635,16715,16769,16820,16886,16957,17035,17106,17185,17260,17338,17418,17501,17606,17694,17773,17863,17956,18030,18100,18191,18245,18325,18392,18476,18561,18623,18687,18750,18821,18925,19040,19137,19251,19309,19364,19616,19950,20026,20181"
-                    }
-                },
-                {
-                    "source": "C:\\Users\\User\\.gradle\\caches\\8.11.1\\transforms\\fa02d48ed4095f06bb59530ee3b453f2\\transformed\\credentials-1.2.0-rc01\\res\\values-mn\\values-mn.xml",
-                    "from": {
-                        "startLines": "2,3",
-                        "startColumns": "4,4",
-                        "startOffsets": "55,166",
-                        "endColumns": "110,113",
-                        "endOffsets": "161,275"
-                    },
-                    "to": {
-                        "startLines": "33,34",
-                        "startColumns": "4,4",
-                        "startOffsets": "3007,3118",
-                        "endColumns": "110,113",
-                        "endOffsets": "3113,3227"
                     }
                 },
                 {

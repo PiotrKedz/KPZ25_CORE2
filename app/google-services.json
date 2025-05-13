@@ -12,7 +12,12 @@
           "package_name": "com.example.innertemp"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "542821370865-7dkejficsd67rjhgbc1ucbqpu234ldoe.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBmugpT0Vzuss0dCiXUoKSpwVFG1qAWzI8"
@@ -20,7 +25,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "542821370865-7dkejficsd67rjhgbc1ucbqpu234ldoe.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

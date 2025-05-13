@@ -3,9 +3,13 @@ package com.example.innertemp
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,7 +25,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -31,7 +37,19 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.innertemp.ui.theme.InnerTempTheme
+import com.facebook.AccessToken
+import com.facebook.CallbackManager
+import com.facebook.FacebookCallback
+import com.facebook.FacebookException
+import com.facebook.login.LoginManager
+import com.facebook.login.LoginResult
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInClient
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
+import com.google.firebase.auth.FacebookAuthProvider
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.CoroutineScope
@@ -43,11 +61,44 @@ import kotlinx.coroutines.withContext
 class AccountActivity : ComponentActivity() {
     private var useDarkTheme by mutableStateOf(false)
     private lateinit var auth: FirebaseAuth
+    private lateinit var googleSignInClient: GoogleSignInClient
+    private lateinit var googleSignInLauncher: ActivityResultLauncher<Intent>
+    private lateinit var callbackManager: CallbackManager
+    private val TAG = "AccountActivity"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         auth = Firebase.auth
+
+        // Configure Google Sign In
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(getString(R.string.default_web_client_id))
+            .requestEmail()
+            .build()
+
+        googleSignInClient = GoogleSignIn.getClient(this, gso)
+
+        // Initialize Facebook Callback Manager
+        callbackManager = CallbackManager.Factory.create()
+
+        // Configure Google Sign In Launcher
+        googleSignInLauncher = registerForActivityResult(
+            ActivityResultContracts.StartActivityForResult()
+        ) { result ->
+            if (result.resultCode == RESULT_OK) {
+                val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+                try {
+                    // Google Sign In was successful, authenticate with Firebase
+                    val account = task.getResult(ApiException::class.java)!!
+                    firebaseAuthWithGoogle(account.idToken!!)
+                } catch (e: ApiException) {
+                    // Google Sign In failed
+                    Log.w(TAG, "Google sign in failed", e)
+                    showToast("Google sign in failed: ${e.message}")
+                }
+            }
+        }
 
         loadThemePreference()
 
@@ -67,6 +118,12 @@ class AccountActivity : ComponentActivity() {
                         },
                         onForgotPassword = { email ->
                             resetPassword(email)
+                        },
+                        onGoogleSignIn = {
+                            signInWithGoogle()
+                        },
+                        onFacebookSignIn = {
+                            signInWithFacebook()
                         }
                     )
                 }
@@ -122,6 +179,91 @@ class AccountActivity : ComponentActivity() {
         }
     }
 
+    private fun signInWithGoogle() {
+        val signInIntent = googleSignInClient.signInIntent
+        googleSignInLauncher.launch(signInIntent)
+    }
+
+    private fun firebaseAuthWithGoogle(idToken: String) {
+        val credential = GoogleAuthProvider.getCredential(idToken, null)
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val authResult = auth.signInWithCredential(credential).await()
+                val isNewUser = authResult.additionalUserInfo?.isNewUser ?: false
+
+                withContext(Dispatchers.Main) {
+                    val sharedPref = getSharedPreferences("user_auth", Context.MODE_PRIVATE)
+                    with(sharedPref.edit()) {
+                        putBoolean("is_signed_in", true)
+                        apply()
+                    }
+
+                    showToast(if (isNewUser) "Account created with Google" else "Signed in with Google")
+                    navigateToMainActivity()
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    showToast("Authentication failed: ${e.message}")
+                }
+            }
+        }
+    }
+
+    private fun signInWithFacebook() {
+        LoginManager.getInstance().logInWithReadPermissions(this, listOf("email", "public_profile"))
+        LoginManager.getInstance().registerCallback(callbackManager, object : FacebookCallback<LoginResult> {
+            override fun onSuccess(result: LoginResult) {
+                Log.d(TAG, "facebook:onSuccess:$result")
+                handleFacebookAccessToken(result.accessToken)
+            }
+
+            override fun onCancel() {
+                Log.d(TAG, "facebook:onCancel")
+                showToast("Facebook login canceled")
+            }
+
+            override fun onError(error: FacebookException) {
+                Log.d(TAG, "facebook:onError", error)
+                showToast("Facebook login error: ${error.message}")
+            }
+        })
+    }
+
+    private fun handleFacebookAccessToken(token: AccessToken) {
+        Log.d(TAG, "handleFacebookAccessToken:$token")
+
+        val credential = FacebookAuthProvider.getCredential(token.token)
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val authResult = auth.signInWithCredential(credential).await()
+                val isNewUser = authResult.additionalUserInfo?.isNewUser ?: false
+
+                withContext(Dispatchers.Main) {
+                    val sharedPref = getSharedPreferences("user_auth", Context.MODE_PRIVATE)
+                    with(sharedPref.edit()) {
+                        putBoolean("is_signed_in", true)
+                        apply()
+                    }
+
+                    showToast(if (isNewUser) "Account created with Facebook" else "Signed in with Facebook")
+                    navigateToMainActivity()
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    showToast("Authentication failed: ${e.message}")
+                    Log.w(TAG, "signInWithCredential:failure", e)
+                }
+            }
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        // Pass the activity result back to the Facebook SDK
+        callbackManager.onActivityResult(requestCode, resultCode, data)
+    }
+
     private fun navigateToMainActivity() {
         val intent = Intent(this, MainActivity::class.java)
         startActivity(intent)
@@ -154,7 +296,9 @@ fun AccountScreen(
     onBack: () -> Unit,
     onSignIn: (String, String) -> Unit = { _, _ -> },
     onSignUp: (String, String) -> Unit = { _, _ -> },
-    onForgotPassword: (String) -> Unit = { _ -> }
+    onForgotPassword: (String) -> Unit = { _ -> },
+    onGoogleSignIn: () -> Unit = {},
+    onFacebookSignIn: () -> Unit = {}
 ) {
     var isSignIn by remember { mutableStateOf(true) }
     var email by remember { mutableStateOf("") }
@@ -426,6 +570,90 @@ fun AccountScreen(
                             confirmPasswordError = ""
                         }) {
                             Text(if (isSignIn) "Sign Up" else "Sign In")
+                        }
+                    }
+
+                    // Social Login Section
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Divider(
+                            modifier = Modifier.weight(1f),
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                        )
+                        Text(
+                            text = " OR ",
+                            modifier = Modifier.padding(horizontal = 8.dp),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                        Divider(
+                            modifier = Modifier.weight(1f),
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Google Sign In Button
+                    Button(
+                        onClick = { onGoogleSignIn() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.White
+                        )
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_google_logo),
+                                contentDescription = "Google Logo",
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Continue with Google",
+                                color = Color.Black,
+                                fontSize = 16.sp
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Facebook Sign In Button
+                    Button(
+                        onClick = { onFacebookSignIn() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF1877F2) // Facebook blue
+                        )
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_facebook_logo),
+                                contentDescription = "Facebook Logo",
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Continue with Facebook",
+                                color = Color.White,
+                                fontSize = 16.sp
+                            )
                         }
                     }
                 }

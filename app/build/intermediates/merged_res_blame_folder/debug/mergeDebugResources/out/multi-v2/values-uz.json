@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.example.innertemp.app-mergeDebugResources-68:/values-uz/values-uz.xml",
+            "outputFile": "com.example.innertemp.app-mergeDebugResources-69:/values-uz/values-uz.xml",
             "map": [
                 {
                     "source": "C:\\Users\\User\\.gradle\\caches\\8.11.1\\transforms\\da5bbe48f003f909f6903fdb3004c7a2\\transformed\\material-release\\res\\values-uz\\values-uz.xml",
@@ -52,23 +52,6 @@
                         "startOffsets": "4955,5060,5210,5339,5448,5593,5726,5846,6102,6274,6382,6541,6673,6827,6989,7055,7116",
                         "endColumns": "104,149,128,108,144,132,119,105,171,107,158,131,153,161,65,60,79",
                         "endOffsets": "5055,5205,5334,5443,5588,5721,5841,5947,6269,6377,6536,6668,6822,6984,7050,7111,7191"
-                    }
-                },
-                {
-                    "source": "C:\\Users\\User\\.gradle\\caches\\8.11.1\\transforms\\fa02d48ed4095f06bb59530ee3b453f2\\transformed\\credentials-1.2.0-rc01\\res\\values-uz\\values-uz.xml",
-                    "from": {
-                        "startLines": "2,3",
-                        "startColumns": "4,4",
-                        "startOffsets": "55,164",
-                        "endColumns": "108,109",
-                        "endOffsets": "159,269"
-                    },
-                    "to": {
-                        "startLines": "33,34",
-                        "startColumns": "4,4",
-                        "startOffsets": "3004,3113",
-                        "endColumns": "108,109",
-                        "endOffsets": "3108,3218"
                     }
                 },
                 {
@@ -173,6 +156,23 @@
                         "startOffsets": "333,438,533,633,715,815,932,1017,1095,1186,1279,1374,1468,1562,1655,1750,1845,1936,2028,2112,2222,2328,2428,2536,2642,2744,2905,19880",
                         "endColumns": "104,94,99,81,99,116,84,77,90,92,94,93,93,92,94,94,90,91,83,109,105,99,107,105,101,160,98,83",
                         "endOffsets": "433,528,628,710,810,927,1012,1090,1181,1274,1369,1463,1557,1650,1745,1840,1931,2023,2107,2217,2323,2423,2531,2637,2739,2900,2999,19959"
+                    }
+                },
+                {
+                    "source": "C:\\Users\\User\\.gradle\\caches\\8.11.1\\transforms\\3bb084e7c6899b308289a45c17d1bdcc\\transformed\\credentials-1.3.0\\res\\values-uz\\values-uz.xml",
+                    "from": {
+                        "startLines": "2,3",
+                        "startColumns": "4,4",
+                        "startOffsets": "55,164",
+                        "endColumns": "108,109",
+                        "endOffsets": "159,269"
+                    },
+                    "to": {
+                        "startLines": "33,34",
+                        "startColumns": "4,4",
+                        "startOffsets": "3004,3113",
+                        "endColumns": "108,109",
+                        "endOffsets": "3108,3218"
                     }
                 },
                 {

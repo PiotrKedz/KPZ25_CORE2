@@ -1,8 +1,25 @@
 {
     "logs": [
         {
-            "outputFile": "com.example.innertemp.app-mergeDebugResources-68:/values-lt/values-lt.xml",
+            "outputFile": "com.example.innertemp.app-mergeDebugResources-69:/values-lt/values-lt.xml",
             "map": [
+                {
+                    "source": "C:\\Users\\User\\.gradle\\caches\\8.11.1\\transforms\\3bb084e7c6899b308289a45c17d1bdcc\\transformed\\credentials-1.3.0\\res\\values-lt\\values-lt.xml",
+                    "from": {
+                        "startLines": "2,3",
+                        "startColumns": "4,4",
+                        "startOffsets": "55,170",
+                        "endColumns": "114,113",
+                        "endOffsets": "165,279"
+                    },
+                    "to": {
+                        "startLines": "35,36",
+                        "startColumns": "4,4",
+                        "startOffsets": "3194,3309",
+                        "endColumns": "114,113",
+                        "endOffsets": "3304,3418"
+                    }
+                },
                 {
                     "source": "C:\\Users\\User\\.gradle\\caches\\8.11.1\\transforms\\7c8a089402c732bb12349b48e2a3d23c\\transformed\\foundation-release\\res\\values-lt\\values-lt.xml",
                     "from": {
@@ -103,23 +120,6 @@
                         "startOffsets": "16030",
                         "endColumns": "91",
                         "endOffsets": "16117"
-                    }
-                },
-                {
-                    "source": "C:\\Users\\User\\.gradle\\caches\\8.11.1\\transforms\\fa02d48ed4095f06bb59530ee3b453f2\\transformed\\credentials-1.2.0-rc01\\res\\values-lt\\values-lt.xml",
-                    "from": {
-                        "startLines": "2,3",
-                        "startColumns": "4,4",
-                        "startOffsets": "55,170",
-                        "endColumns": "114,113",
-                        "endOffsets": "165,279"
-                    },
-                    "to": {
-                        "startLines": "35,36",
-                        "startColumns": "4,4",
-                        "startOffsets": "3194,3309",
-                        "endColumns": "114,113",
-                        "endOffsets": "3304,3418"
                     }
                 },
                 {

@@ -1,8 +1,25 @@
 {
     "logs": [
         {
-            "outputFile": "com.example.innertemp.app-mergeDebugResources-68:/values-lv/values-lv.xml",
+            "outputFile": "com.example.innertemp.app-mergeDebugResources-69:/values-lv/values-lv.xml",
             "map": [
+                {
+                    "source": "C:\\Users\\User\\.gradle\\caches\\8.11.1\\transforms\\3bb084e7c6899b308289a45c17d1bdcc\\transformed\\credentials-1.3.0\\res\\values-lv\\values-lv.xml",
+                    "from": {
+                        "startLines": "2,3",
+                        "startColumns": "4,4",
+                        "startOffsets": "55,165",
+                        "endColumns": "109,123",
+                        "endOffsets": "160,284"
+                    },
+                    "to": {
+                        "startLines": "34,35",
+                        "startColumns": "4,4",
+                        "startOffsets": "3258,3368",
+                        "endColumns": "109,123",
+                        "endOffsets": "3363,3487"
+                    }
+                },
                 {
                     "source": "C:\\Users\\User\\.gradle\\caches\\8.11.1\\transforms\\e08f1b33f4a29e5712410dcac39b73b3\\transformed\\core-1.15.0\\res\\values-lv\\values-lv.xml",
                     "from": {
@@ -122,23 +139,6 @@
                         "startOffsets": "8802,8929,9056,9171,9296,9405,9505,9622,9760,9878,10025,10111,10209,10303,10404,10523,10647,10750,10888,11019,11157,11340,11472,11591,11718,11838,11933,12032,12153,12288,12390,12504,12610,12745,12890,12999,13102,13185,13280,13374,13484,13574,13661,13772,13852,13938,14033,14137,14228,14326,14415,14522,14624,14724,14877,14957,15062",
                         "endColumns": "126,126,114,124,108,99,116,137,117,146,85,97,93,100,118,123,102,137,130,137,182,131,118,126,119,94,98,120,134,101,113,105,134,144,108,102,82,94,93,109,89,86,110,79,85,94,103,90,97,88,106,101,99,152,79,104,98",
                         "endOffsets": "8924,9051,9166,9291,9400,9500,9617,9755,9873,10020,10106,10204,10298,10399,10518,10642,10745,10883,11014,11152,11335,11467,11586,11713,11833,11928,12027,12148,12283,12385,12499,12605,12740,12885,12994,13097,13180,13275,13369,13479,13569,13656,13767,13847,13933,14028,14132,14223,14321,14410,14517,14619,14719,14872,14952,15057,15156"
-                    }
-                },
-                {
-                    "source": "C:\\Users\\User\\.gradle\\caches\\8.11.1\\transforms\\fa02d48ed4095f06bb59530ee3b453f2\\transformed\\credentials-1.2.0-rc01\\res\\values-lv\\values-lv.xml",
-                    "from": {
-                        "startLines": "2,3",
-                        "startColumns": "4,4",
-                        "startOffsets": "55,165",
-                        "endColumns": "109,123",
-                        "endOffsets": "160,284"
-                    },
-                    "to": {
-                        "startLines": "34,35",
-                        "startColumns": "4,4",
-                        "startOffsets": "3258,3368",
-                        "endColumns": "109,123",
-                        "endOffsets": "3363,3487"
                     }
                 },
                 {

@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.example.innertemp.app-mergeDebugResources-68:/values-v24/values-v24.xml",
+            "outputFile": "com.example.innertemp.app-mergeDebugResources-69:/values-v24/values-v24.xml",
             "map": [
                 {
                     "source": "C:\\Users\\User\\.gradle\\caches\\8.11.1\\transforms\\0ecf84f3f8e3a9739afc0c068bfdc1c2\\transformed\\appcompat-1.7.0\\res\\values-v24\\values-v24.xml",
@@ -11,6 +11,23 @@
                         "startOffsets": "55,212",
                         "endColumns": "156,134",
                         "endOffsets": "207,342"
+                    }
+                },
+                {
+                    "source": "C:\\Users\\User\\.gradle\\caches\\8.11.1\\transforms\\500e733947e25028422374f13ceab605\\transformed\\media-1.0.0\\res\\values-v24\\values-v24.xml",
+                    "from": {
+                        "startLines": "2,3,4,5",
+                        "startColumns": "4,4,4,4",
+                        "startOffsets": "55,121,182,248",
+                        "endColumns": "65,60,65,66",
+                        "endOffsets": "116,177,243,310"
+                    },
+                    "to": {
+                        "startLines": "20,21,22,23",
+                        "startColumns": "4,4,4,4",
+                        "startOffsets": "1547,1613,1674,1740",
+                        "endColumns": "65,60,65,66",
+                        "endOffsets": "1608,1669,1735,1802"
                     }
                 },
                 {
