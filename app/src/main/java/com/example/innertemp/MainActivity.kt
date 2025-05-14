@@ -1,3 +1,4 @@
+
 package com.example.innertemp
 
 import android.Manifest
@@ -16,12 +17,12 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresPermission
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -39,6 +40,15 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.DirectionsRun
+import androidx.compose.material.icons.outlined.EmojiEvents
+import androidx.compose.ui.draw.alpha
+
+enum class ActivityMode {
+    TRAINING,
+    RACE
+}
 
 class MainActivity : ComponentActivity() {
     private lateinit var bluetoothManager: BluetoothManager
@@ -55,6 +65,8 @@ class MainActivity : ComponentActivity() {
     private val _averageTemperatureCore = mutableStateOf(0.0)
     private var tempCoreSamples = mutableListOf<Double>()
     private var totalSamples = 0
+    private val _activityMode = mutableStateOf(ActivityMode.TRAINING)
+    private val _athleticLevel = mutableStateOf("")
 
     private val enableBtLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -130,6 +142,25 @@ class MainActivity : ComponentActivity() {
         _averageTemperatureCore.value = 0.0
     }
 
+    private fun loadUserAthleticLevel() {
+        val sharedPref = getSharedPreferences("user_profile", Context.MODE_PRIVATE)
+        _athleticLevel.value = sharedPref.getString("athletic_level", "Medium") ?: "Medium"
+    }
+
+    private fun saveActivityMode(mode: ActivityMode) {
+        val sharedPref = getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+        with(sharedPref.edit()) {
+            putString("activity_mode", mode.name)
+            apply()
+        }
+    }
+
+    private fun loadActivityMode() {
+        val sharedPref = getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+        val savedMode = sharedPref.getString("activity_mode", ActivityMode.TRAINING.name) ?: ActivityMode.TRAINING.name
+        _activityMode.value = ActivityMode.valueOf(savedMode)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -178,7 +209,11 @@ class MainActivity : ComponentActivity() {
                 temperatureLogger.logTemperature(tempCore)
             }
         }
+
         loadThemePreference()
+        loadActivityMode()
+        loadUserAthleticLevel()
+
         setContent {
             InnerTempTheme(darkTheme = useDarkTheme) {
                 Surface(
@@ -194,6 +229,8 @@ class MainActivity : ComponentActivity() {
                         batteryLevel = _batteryLevel,
                         isPaused = _isPaused,
                         isMonitoring = _isMonitoring,
+                        activityMode = _activityMode,
+                        athleticLevel = _athleticLevel,
                         onPauseToggle = {
                             bluetoothManager.togglePause()
                             Toast.makeText(
@@ -218,6 +255,10 @@ class MainActivity : ComponentActivity() {
                             val intent = Intent(this, HistoryActivity::class.java)
                             startActivity(intent)
                         },
+                        onActivityModeChange = { mode ->
+                            _activityMode.value = mode
+                            saveActivityMode(mode)
+                        }
                     )
                 }
             }
@@ -225,7 +266,6 @@ class MainActivity : ComponentActivity() {
 
         checkPermissions()
 
-        // Observer to update theme when returning to activity
         lifecycle.addObserver(LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 val sharedPref = getSharedPreferences("app_settings", Context.MODE_PRIVATE)
@@ -234,8 +274,11 @@ class MainActivity : ComponentActivity() {
 
                 if (shouldUseDarkTheme != useDarkTheme) {
                     useDarkTheme = shouldUseDarkTheme
-                    recreate() // Use recreate() instead of custom onThemeChanged() method
+                    recreate()
                 }
+
+                // Reload athletic level when resuming the activity
+                loadUserAthleticLevel()
             }
         })
     }
@@ -262,10 +305,13 @@ class MainActivity : ComponentActivity() {
         batteryLevel: State<Double>,
         isPaused: State<Boolean>,
         isMonitoring: State<Boolean>,
+        activityMode: State<ActivityMode>,
+        athleticLevel: State<String>,
         onPauseToggle: () -> Unit,
         onMonitoringToggle: () -> Unit,
         onGoToProfile: () -> Unit,
         onGoToHistory: () -> Unit,
+        onActivityModeChange: (ActivityMode) -> Unit
     ) {
         HomeScreen(
             isConnected = isConnected.value,
@@ -276,12 +322,55 @@ class MainActivity : ComponentActivity() {
             batteryLevel = batteryLevel.value,
             isPaused = isPaused.value,
             isMonitoring = isMonitoring.value,
+            activityMode = activityMode.value,
+            athleticLevel = athleticLevel.value,
             onPauseToggle = onPauseToggle,
             onMonitoringToggle = onMonitoringToggle,
             onGoToProfile = onGoToProfile,
             onGoToHistory = onGoToHistory,
+            onActivityModeChange = onActivityModeChange
         )
     }
+}
+
+// Utility function to determine temperature color ranges based on mode and athletic level
+fun getTemperatureColorRanges(mode: ActivityMode, athleticLevel: String): Triple<Double, Double, Double> {
+    // Default values
+    var lowThreshold = 36.0
+    var highThreshold = 38.0
+
+    // Adjust based on athletic level
+    when (athleticLevel) {
+        "Low" -> {
+            lowThreshold = 36.2
+            highThreshold = 37.8
+        }
+        "Medium" -> {
+            lowThreshold = 36.0
+            highThreshold = 38.0
+        }
+        "High" -> {
+            lowThreshold = 35.8
+            highThreshold = 38.2
+        }
+    }
+
+    // Further adjust based on activity mode
+    when (mode) {
+        ActivityMode.TRAINING -> {
+            // Keep default thresholds for training
+        }
+        ActivityMode.RACE -> {
+            // For race mode, widen the acceptable range (green zone)
+            lowThreshold -= 0.3
+            highThreshold += 0.3
+        }
+    }
+
+    // Calculate middle (optimal) temperature
+    val optimalTemp = (lowThreshold + highThreshold) / 2
+
+    return Triple(lowThreshold, optimalTemp, highThreshold)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -295,16 +384,20 @@ fun HomeScreen(
     batteryLevel: Double,
     isPaused: Boolean,
     isMonitoring: Boolean,
+    activityMode: ActivityMode,
+    athleticLevel: String,
     onPauseToggle: () -> Unit,
     onMonitoringToggle: () -> Unit,
     onGoToProfile: () -> Unit,
     onGoToHistory: () -> Unit,
+    onActivityModeChange: (ActivityMode) -> Unit
 ) {
     var showDevMenu by remember { mutableStateOf(false) }
     var homeTitleClickCount by remember { mutableIntStateOf(0) }
     var mockIsConnected by remember { mutableStateOf(isConnected) }
     var mockTemperatureCore by remember { mutableDoubleStateOf(temperatureCore) }
     var mockBatteryLevel by remember { mutableDoubleStateOf(batteryLevel) }
+    var showModeMenu by remember { mutableStateOf(false) }
 
     LaunchedEffect(isConnected, temperatureCore, batteryLevel) {
         if (!showDevMenu) {
@@ -317,20 +410,25 @@ fun HomeScreen(
     val effectiveTemperatureCore = mockTemperatureCore
     val effectiveBatteryLevel = mockBatteryLevel
     val colors = MaterialTheme.colorScheme
+
+    // Get temperature thresholds based on mode and athletic level
+    val (lowThreshold, optimalTemp, highThreshold) = getTemperatureColorRanges(activityMode, athleticLevel)
+
     val tempColorSkin = when {
-        temperatureSkin < 36.0 -> Blue
-        temperatureSkin > 38.0 -> Red
+        temperatureSkin < lowThreshold -> Blue
+        temperatureSkin > highThreshold -> Red
         else -> Green
     }
 
     val tempColorOutside = when {
-        temperatureOutside < 36.0 -> Blue
-        temperatureOutside > 38.0 -> Red
+        temperatureOutside < lowThreshold -> Blue
+        temperatureOutside > highThreshold -> Red
         else -> Green
     }
+
     val tempColorCore = when {
-        effectiveTemperatureCore < 36.0 -> Blue
-        effectiveTemperatureCore > 38.0 -> Red
+        effectiveTemperatureCore < lowThreshold -> Blue
+        effectiveTemperatureCore > highThreshold -> Red
         else -> Green
     }
 
@@ -394,6 +492,7 @@ fun HomeScreen(
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
+
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center,
@@ -420,7 +519,7 @@ fun HomeScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(100.dp))
+                Spacer(modifier = Modifier.height(80.dp))
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
@@ -444,6 +543,30 @@ fun HomeScreen(
                                 color = tempColorCore,
                                 fontWeight = FontWeight.Bold
                             )
+
+                            // Temperature range indicator
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .padding(top = 4.dp)
+                                    .alpha(0.8f)
+                            ) {
+                                Text(
+                                    text = String.format("%.1f°C", lowThreshold),
+                                    color = Blue,
+                                    fontSize = 12.sp
+                                )
+                                Text(
+                                    text = " - ",
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontSize = 12.sp
+                                )
+                                Text(
+                                    text = String.format("%.1f°C", highThreshold),
+                                    color = Red,
+                                    fontSize = 12.sp
+                                )
+                            }
                         }
                     }
                     Spacer(modifier = Modifier.height(16.dp))
@@ -497,6 +620,99 @@ fun HomeScreen(
                         modifier = Modifier.padding(bottom = 12.dp)
                     )
 
+                    // Activity Mode selection - moved here between monitoring status and control buttons
+                    Box {
+                        val buttonWidth = 240.dp
+                        Button(
+                            onClick = { showModeMenu = true },
+                            modifier = Modifier.width(buttonWidth)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    imageVector = if (activityMode == ActivityMode.RACE)
+                                        Icons.Outlined.EmojiEvents
+                                    else
+                                        Icons.Outlined.DirectionsRun,
+                                    contentDescription = "Activity Mode",
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Activity Mode: ${if (activityMode == ActivityMode.RACE) "Race" else "Training"}"
+                                )
+                            }
+                        }
+
+                        DropdownMenu(
+                            expanded = showModeMenu,
+                            onDismissRequest = { showModeMenu = false },
+                            modifier = Modifier.width(buttonWidth)
+                        ) {
+                            DropdownMenuItem(
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            imageVector = Icons.Outlined.DirectionsRun,
+                                            contentDescription = "Training Mode",
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("Training")
+                                    }
+                                },
+                                onClick = {
+                                    onActivityModeChange(ActivityMode.TRAINING)
+                                    showModeMenu = false
+                                },
+                                leadingIcon = {
+                                    if (activityMode == ActivityMode.TRAINING) {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = "Selected",
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    } else {
+                                        Box(modifier = Modifier.size(24.dp))
+                                    }
+                                }
+                            )
+
+                            DropdownMenuItem(
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            imageVector = Icons.Outlined.EmojiEvents,
+                                            contentDescription = "Race Mode",
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("Race")
+                                    }
+                                },
+                                onClick = {
+                                    onActivityModeChange(ActivityMode.RACE)
+                                    showModeMenu = false
+                                },
+                                leadingIcon = {
+                                    if (activityMode == ActivityMode.RACE) {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = "Selected",
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    } else {
+                                        Box(modifier = Modifier.size(24.dp))
+                                    }
+                                }
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
@@ -520,6 +736,7 @@ fun HomeScreen(
                         }
                     }
                 }
+
                 Spacer(modifier = Modifier.height(32.dp))
                 Text(
                     text = when {
@@ -678,10 +895,13 @@ fun HomeScreenPreview() {
             batteryLevel = 78.0,
             isPaused = false,
             isMonitoring = true,
+            activityMode = ActivityMode.TRAINING,
+            athleticLevel = "Medium",
             onPauseToggle = { },
             onMonitoringToggle = { },
             onGoToProfile = { },
             onGoToHistory = { },
+            onActivityModeChange = { }
         )
     }
 }

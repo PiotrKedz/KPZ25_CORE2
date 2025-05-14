@@ -14,19 +14,13 @@ import kotlinx.coroutines.flow.update
 
 private const val TAG = "WearableDataReceiver"
 
-/**
- * Service to listen for data from the mobile device
- */
 class WearableDataReceiver(context: Context) : DataClient.OnDataChangedListener {
 
-    // Initialize the DataClient
     private val dataClient = Wearable.getDataClient(context)
 
-    // Data path constants
     companion object {
         const val DATA_PATH = "/innertemp/data"
 
-        // Data keys
         const val KEY_TEMP_CORE = "temp_core"
         const val KEY_TEMP_SKIN = "temp_skin"
         const val KEY_TEMP_OUTSIDE = "temp_outside"
@@ -37,7 +31,6 @@ class WearableDataReceiver(context: Context) : DataClient.OnDataChangedListener 
         const val KEY_IS_PAUSED = "is_paused"
     }
 
-    // State holders for all the data we receive
     private val _deviceState = MutableStateFlow(DeviceState())
     val deviceState: StateFlow<DeviceState> = _deviceState.asStateFlow()
 
@@ -53,36 +46,25 @@ class WearableDataReceiver(context: Context) : DataClient.OnDataChangedListener 
         val lastUpdated: Long = 0L
     )
 
-    /**
-     * Start listening for data events from the mobile app
-     */
     fun startListening() {
         dataClient.addListener(this)
         Log.d(TAG, "Started listening for data events")
     }
 
-    /**
-     * Stop listening for data events
-     */
     fun stopListening() {
         dataClient.removeListener(this)
         Log.d(TAG, "Stopped listening for data events")
     }
 
-    /**
-     * Called when data changes on the Data Layer
-     */
     override fun onDataChanged(dataEvents: DataEventBuffer) {
         dataEvents.forEach { event ->
             if (event.type == DataEvent.TYPE_CHANGED) {
                 val uri = event.dataItem.uri
 
-                // Check if this is the data path we're interested in
                 if (uri.path == DATA_PATH) {
                     val dataMapItem = DataMapItem.fromDataItem(event.dataItem)
                     val dataMap = dataMapItem.dataMap
 
-                    // Extract all the data values
                     val tempCore = dataMap.getDouble(KEY_TEMP_CORE, 0.0)
                     val tempSkin = dataMap.getDouble(KEY_TEMP_SKIN, 0.0)
                     val tempOutside = dataMap.getDouble(KEY_TEMP_OUTSIDE, 0.0)
@@ -93,7 +75,6 @@ class WearableDataReceiver(context: Context) : DataClient.OnDataChangedListener 
                     val isPaused = dataMap.getBoolean(KEY_IS_PAUSED, false)
                     val timestamp = dataMap.getLong("timestamp", System.currentTimeMillis())
 
-                    // Update our state flow with the new values
                     _deviceState.update { currentState ->
                         currentState.copy(
                             tempCore = tempCore,

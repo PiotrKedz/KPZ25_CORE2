@@ -32,17 +32,14 @@ import com.example.wearos.data.WearableDataReceiver
 import com.example.wearos.presentation.theme.InnerTempTheme
 
 class MainActivity : ComponentActivity() {
-    // Initialize our data receiver
     private lateinit var wearableDataReceiver: WearableDataReceiver
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
 
-        // Create the data receiver
         wearableDataReceiver = WearableDataReceiver(this)
 
-        // Setup lifecycle observation to start/stop data listening
         lifecycle.addObserver(LifecycleEventObserver { _, event ->
             when (event) {
                 Lifecycle.Event.ON_RESUME -> wearableDataReceiver.startListening()
@@ -76,10 +73,8 @@ fun WearApp(wearableDataReceiver: WearableDataReceiver) {
 
 @Composable
 fun HomeScreen(wearableDataReceiver: WearableDataReceiver) {
-    // Collect the device state from our data receiver
     val deviceState by wearableDataReceiver.deviceState.collectAsState()
 
-    // Get status text based on monitoring and paused states
     val temperatureText = remember(deviceState) {
         when {
             !deviceState.isConnected -> "-"
@@ -90,12 +85,11 @@ fun HomeScreen(wearableDataReceiver: WearableDataReceiver) {
         }
     }
 
-    // Get color for temperature based on value
     val temperatureColor = remember(deviceState.tempCore) {
         when {
-            deviceState.tempCore < 36.0 -> Color(0xFF03A9F4) // Blue
-            deviceState.tempCore > 38.0 -> Color(0xFFF44336) // Red
-            else -> Color(0xFF4CAF50) // Green
+            deviceState.tempCore < 36.0 -> Color(0xFF03A9F4)
+            deviceState.tempCore > 38.0 -> Color(0xFFF44336)
+            else -> Color(0xFF4CAF50)
         }
     }
 
