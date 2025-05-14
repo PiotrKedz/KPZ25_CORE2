@@ -624,8 +624,17 @@ fun HomeScreen(
                     Box {
                         val buttonWidth = 240.dp
                         Button(
-                            onClick = { showModeMenu = true },
-                            modifier = Modifier.width(buttonWidth)
+                            onClick = {
+                                if (!isMonitoring) {
+                                    showModeMenu = true
+                                }
+                            },
+                            modifier = Modifier.width(buttonWidth),
+                            enabled = !isMonitoring,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (isMonitoring) colors.secondary else colors.primary,
+                                disabledContainerColor = colors.secondary.copy(alpha = 0.7f)
+                            )
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
@@ -647,7 +656,7 @@ fun HomeScreen(
                         }
 
                         DropdownMenu(
-                            expanded = showModeMenu,
+                            expanded = showModeMenu && !isMonitoring,
                             onDismissRequest = { showModeMenu = false },
                             modifier = Modifier.width(buttonWidth)
                         ) {
