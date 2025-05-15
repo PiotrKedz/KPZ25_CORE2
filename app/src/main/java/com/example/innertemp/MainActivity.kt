@@ -41,6 +41,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.outlined.DirectionsRun
 import androidx.compose.material.icons.outlined.EmojiEvents
 import androidx.compose.material.icons.outlined.Tune
+import androidx.compose.material.icons.outlined.Sports
+import androidx.compose.material.icons.outlined.DirectionsBike
+import androidx.compose.material.icons.outlined.Kayaking
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.window.Dialog
 
@@ -48,6 +51,12 @@ enum class ActivityMode {
     TRAINING,
     RACE,
     CUSTOM
+}
+
+enum class Sport {
+    RUNNING,
+    CYCLING,
+    KAYAKING
 }
 
 class MainActivity : ComponentActivity() {
@@ -66,6 +75,7 @@ class MainActivity : ComponentActivity() {
     private var tempCoreSamples = mutableListOf<Double>()
     private var totalSamples = 0
     private val _activityMode = mutableStateOf(ActivityMode.TRAINING)
+    private val _selectedSport = mutableStateOf(Sport.RUNNING)
     private val _athleticLevel = mutableStateOf("")
 
     private val _customTopTemperatureThreshold = mutableStateOf(38.5)
@@ -113,7 +123,7 @@ class MainActivity : ComponentActivity() {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     add(Manifest.permission.POST_NOTIFICATIONS)
                 }
-            }.toTypedArray() // Convert back to Array
+            }.toTypedArray()
         } else {
             arrayOf(
                 Manifest.permission.ACCESS_FINE_LOCATION
@@ -174,6 +184,24 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun saveSelectedSport(sport: Sport) {
+        val sharedPref = getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+        with(sharedPref.edit()) {
+            putString("selected_sport", sport.name)
+            apply()
+        }
+    }
+
+    private fun loadSelectedSport() {
+        val sharedPref = getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+        val savedSport = sharedPref.getString("selected_sport", Sport.RUNNING.name) ?: Sport.RUNNING.name
+        _selectedSport.value = try {
+            Sport.valueOf(savedSport)
+        } catch (e: IllegalArgumentException) {
+            Sport.RUNNING
+        }
+    }
+
     private fun saveCustomThresholds(top: Double, bottom: Double) {
         val sharedPref = getSharedPreferences("app_settings", Context.MODE_PRIVATE)
         with(sharedPref.edit()) {
@@ -230,7 +258,6 @@ class MainActivity : ComponentActivity() {
                 updateAverageTemperature(tempCore)
                 temperatureLogger.logTemperature(tempCore)
 
-                // Get thresholds (similar to how you do it for UI)
                 val (lowThreshold, _, highThreshold) = getTemperatureColorRanges(
                     mode = _activityMode.value,
                     athleticLevel = _athleticLevel.value,
@@ -238,19 +265,17 @@ class MainActivity : ComponentActivity() {
                     customBottom = if (_activityMode.value == ActivityMode.CUSTOM) _customBottomTemperatureThreshold.value else null
                 )
 
-                if (tempCore > 0) { // Ensure valid temperature reading
+                if (tempCore > 0) {
                     if (tempCore > highThreshold) {
                         notificationsManager.showHighTemperatureNotification(tempCore, highThreshold)
                     } else if (tempCore < lowThreshold) {
                         notificationsManager.showLowTemperatureNotification(tempCore, lowThreshold)
                     } else {
-                        // Optional: If temperature is back in normal range, reset timers
                         notificationsManager.resetTemperatureNotificationTimers()
                     }
                 }
             }
 
-            // Battery notifications (example for integer percentage)
             val batteryPercent = battery.toInt()
             if (batteryPercent == 10) {
                 notificationsManager.showBatteryLowNotification(batteryPercent)
@@ -261,6 +286,7 @@ class MainActivity : ComponentActivity() {
 
         loadThemePreference()
         loadActivityMode()
+        loadSelectedSport()
         loadUserAthleticLevel()
         loadCustomThresholds()
 
@@ -280,6 +306,7 @@ class MainActivity : ComponentActivity() {
                         isPaused = _isPaused,
                         isMonitoring = _isMonitoring,
                         activityMode = _activityMode,
+                        selectedSport = _selectedSport,
                         athleticLevel = _athleticLevel,
                         customTopThreshold = _customTopTemperatureThreshold,
                         customBottomThreshold = _customBottomTemperatureThreshold,
@@ -296,6 +323,10 @@ class MainActivity : ComponentActivity() {
                         onActivityModeChange = { mode ->
                             _activityMode.value = mode
                             saveActivityMode(mode)
+                        },
+                        onSportChange = { sport ->
+                            _selectedSport.value = sport
+                            saveSelectedSport(sport)
                         },
                         onCustomThresholdsChange = { top, bottom ->
                             _customTopTemperatureThreshold.value = top
@@ -346,6 +377,7 @@ class MainActivity : ComponentActivity() {
         isPaused: State<Boolean>,
         isMonitoring: State<Boolean>,
         activityMode: State<ActivityMode>,
+        selectedSport: State<Sport>,
         athleticLevel: State<String>,
         customTopThreshold: State<Double>,
         customBottomThreshold: State<Double>,
@@ -354,6 +386,7 @@ class MainActivity : ComponentActivity() {
         onGoToProfile: () -> Unit,
         onGoToHistory: () -> Unit,
         onActivityModeChange: (ActivityMode) -> Unit,
+        onSportChange: (Sport) -> Unit,
         onCustomThresholdsChange: (top: Double, bottom: Double) -> Unit
     ) {
         HomeScreen(
@@ -366,6 +399,7 @@ class MainActivity : ComponentActivity() {
             isPaused = isPaused.value,
             isMonitoring = isMonitoring.value,
             activityMode = activityMode.value,
+            selectedSport = selectedSport.value,
             athleticLevel = athleticLevel.value,
             customTopThreshold = customTopThreshold.value,
             customBottomThreshold = customBottomThreshold.value,
@@ -374,6 +408,7 @@ class MainActivity : ComponentActivity() {
             onGoToProfile = onGoToProfile,
             onGoToHistory = onGoToHistory,
             onActivityModeChange = onActivityModeChange,
+            onSportChange = onSportChange,
             onCustomThresholdsChange = onCustomThresholdsChange
         )
     }
@@ -494,6 +529,7 @@ fun HomeScreen(
     isPaused: Boolean,
     isMonitoring: Boolean,
     activityMode: ActivityMode,
+    selectedSport: Sport,
     athleticLevel: String,
     customTopThreshold: Double,
     customBottomThreshold: Double,
@@ -502,6 +538,7 @@ fun HomeScreen(
     onGoToProfile: () -> Unit,
     onGoToHistory: () -> Unit,
     onActivityModeChange: (ActivityMode) -> Unit,
+    onSportChange: (Sport) -> Unit,
     onCustomThresholdsChange: (top: Double, bottom: Double) -> Unit
 ) {
     var showDevMenu by remember { mutableStateOf(false) }
@@ -510,6 +547,7 @@ fun HomeScreen(
     var mockTemperatureCore by remember { mutableDoubleStateOf(temperatureCore) }
     var mockBatteryLevel by remember { mutableDoubleStateOf(batteryLevel) }
     var showModeMenu by remember { mutableStateOf(false) }
+    var showSportMenu by remember { mutableStateOf(false) }
     var showCustomSettingsDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(isConnected, temperatureCore, batteryLevel) {
@@ -547,7 +585,7 @@ fun HomeScreen(
         else -> Green
     }
 
-    val currentDateStr = remember { SimpleDateFormat("dd MMMM yyyy", Locale.getDefault()).format(Date()) }
+    val currentDateStr = remember { SimpleDateFormat("dd MMMM HH:mm", Locale.getDefault()).format(Date()) }
 
     if (showCustomSettingsDialog) {
         CustomThresholdDialog(
@@ -584,7 +622,7 @@ fun HomeScreen(
                         color = if (!effectiveIsConnected) colors.error else colors.onSurface
                     )
                 }
-                Spacer(Modifier.height(80.dp)) // Reduced Spacer, was 80.dp
+                Spacer(Modifier.height(80.dp))
                 Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("Core Temperature", fontWeight = FontWeight.Bold, fontSize = 20.sp, modifier = Modifier.padding(bottom = 8.dp))
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
@@ -604,7 +642,7 @@ fun HomeScreen(
                     Text("Outside Temperature", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     Text(String.format("%.1f°C", temperatureOutside), fontSize = 24.sp, color = tempColorOutside, fontWeight = FontWeight.Bold)
                 }
-                Spacer(Modifier.height(32.dp)) // Was 32.dp
+                Spacer(Modifier.height(32.dp))
                 Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("Monitoring Status", fontWeight = FontWeight.Bold, fontSize = 18.sp, modifier = Modifier.padding(bottom = 12.dp))
                     Text(
@@ -614,9 +652,8 @@ fun HomeScreen(
                         modifier = Modifier.padding(bottom = 12.dp)
                     )
 
-                    // Activity Mode selection Button
-                    Box { // Needed to anchor the DropdownMenu correctly
-                        val buttonTargetWidth = 220.dp // Adjusted for potentially longer text or just preference
+                    Box {
+                        val buttonTargetWidth = 220.dp
                         Button(
                             onClick = { if (!isMonitoring) showModeMenu = true },
                             modifier = Modifier.width(buttonTargetWidth),
@@ -676,22 +713,97 @@ fun HomeScreen(
                         }
                     }
 
-                    // Conditionally visible "Edit Custom Mode Settings" Button
+                    Spacer(modifier = Modifier.height(8.dp))
+
                     if (activityMode == ActivityMode.CUSTOM && !isMonitoring) {
-                        Spacer(modifier = Modifier.height(8.dp)) // Space above the edit button
                         Button(
                             onClick = { showCustomSettingsDialog = true },
-                            modifier = Modifier.width(220.dp), // Match the activity mode button width or adjust as needed
+                            modifier = Modifier.width(220.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.secondaryContainer, // Example color
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
                                 contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                             )
                         ) {
                             Text("Edit Custom Mode Settings")
                         }
+                        Spacer(modifier = Modifier.height(8.dp))
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp)) // Space before Start/Stop/Pause buttons
+
+                    Box {
+                        val buttonTargetWidth = 220.dp
+                        Button(
+                            onClick = { if (!isMonitoring) showSportMenu = true },
+                            modifier = Modifier.width(buttonTargetWidth),
+                            enabled = !isMonitoring,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (isMonitoring) colors.secondary else colors.primary,
+                                disabledContainerColor = colors.secondary.copy(alpha = 0.7f)
+                            ),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    imageVector = when (selectedSport) {
+                                        Sport.RUNNING -> Icons.Outlined.DirectionsRun
+                                        Sport.CYCLING -> Icons.Outlined.DirectionsBike
+                                        Sport.KAYAKING -> Icons.Outlined.Kayaking
+                                    },
+                                    contentDescription = "Selected Sport Icon",
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Sport: ${
+                                        when (selectedSport) {
+                                            Sport.RUNNING -> "Running"
+                                            Sport.CYCLING -> "Cycling"
+                                            Sport.KAYAKING -> "Kayaking"
+                                        }
+                                    }"
+                                )
+                            }
+                        }
+                        DropdownMenu(
+                            expanded = showSportMenu && !isMonitoring,
+                            onDismissRequest = { showSportMenu = false },
+                            modifier = Modifier.width(buttonTargetWidth)
+                        ) {
+                            Sport.values().forEach { sport ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(
+                                                imageVector = when (sport) {
+                                                    Sport.RUNNING -> Icons.Outlined.DirectionsRun
+                                                    Sport.CYCLING -> Icons.Outlined.DirectionsBike
+                                                    Sport.KAYAKING -> Icons.Outlined.Kayaking
+                                                },
+                                                contentDescription = "${sport.name} Icon",
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                            Spacer(Modifier.width(8.dp))
+                                            Text(
+                                                when (sport) {
+                                                    Sport.RUNNING -> "Running"
+                                                    Sport.CYCLING -> "Cycling"
+                                                    Sport.KAYAKING -> "Kayaking"
+                                                }
+                                            )
+                                        }
+                                    },
+                                    onClick = { onSportChange(sport); showSportMenu = false },
+                                    leadingIcon = { if (selectedSport == sport) Icon(Icons.Default.Check, "Selected", tint = MaterialTheme.colorScheme.primary) else Box(Modifier.size(24.dp)) }
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Button(onClick = onPauseToggle, enabled = effectiveIsConnected && isMonitoring, colors = ButtonDefaults.buttonColors(containerColor = if (isPaused) Green else colors.tertiary)) { Text(if (isPaused) "Resume" else "Pause") }
                         Button(onClick = onMonitoringToggle, enabled = effectiveIsConnected, colors = ButtonDefaults.buttonColors(containerColor = if (isMonitoring) Red else Green)) { Text(if (isMonitoring) "Stop" else "Start") }
@@ -742,7 +854,7 @@ fun DeveloperMenu(
             Slider(value = temperatureCore.toFloat(), onValueChange = { onTemperatureCoreChange(it.toDouble()) }, valueRange = 35f..40f, steps = ( (40f-35f) / 0.1f ).toInt() - 1 )
             Spacer(Modifier.height(16.dp))
             Text("Battery Level: ${String.format("%.0f%%", batteryLevel)}", modifier = Modifier.padding(bottom = 4.dp))
-            Slider(value = batteryLevel.toFloat(), onValueChange = { onBatteryLevelChange(it.toDouble()) }, valueRange = 0f..100f, steps = 100 -1 ) // 100 steps means 99 divisions
+            Slider(value = batteryLevel.toFloat(), onValueChange = { onBatteryLevelChange(it.toDouble()) }, valueRange = 0f..100f, steps = 100 -1 )
             Spacer(Modifier.height(32.dp))
             Button(onClick = onClose, modifier = Modifier.fillMaxWidth().height(56.dp), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) {
                 Text("CLOSE DEV MENU", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onError)
@@ -758,11 +870,11 @@ fun HomeScreenCustomModePreview() {
         HomeScreen(
             isConnected = true, connectionQuality = BluetoothConnectionQuality.GOOD,
             temperatureCore = 37.2, temperatureSkin = 36.8, temperatureOutside = 35.5,
-            batteryLevel = 78.0, isPaused = false, isMonitoring = false, // Not monitoring to show edit button
-            activityMode = ActivityMode.CUSTOM, athleticLevel = "Medium",
+            batteryLevel = 78.0, isPaused = false, isMonitoring = false,
+            activityMode = ActivityMode.CUSTOM, selectedSport = Sport.RUNNING, athleticLevel = "Medium",
             customTopThreshold = 39.0, customBottomThreshold = 36.0,
             onPauseToggle = {}, onMonitoringToggle = {}, onGoToProfile = {}, onGoToHistory = {},
-            onActivityModeChange = {}, onCustomThresholdsChange = { _, _ -> }
+            onActivityModeChange = {}, onSportChange = {}, onCustomThresholdsChange = { _, _ -> }
         )
     }
 }
@@ -775,10 +887,10 @@ fun HomeScreenTrainingModePreview() {
             isConnected = true, connectionQuality = BluetoothConnectionQuality.GOOD,
             temperatureCore = 37.2, temperatureSkin = 36.8, temperatureOutside = 35.5,
             batteryLevel = 78.0, isPaused = false, isMonitoring = true,
-            activityMode = ActivityMode.TRAINING, athleticLevel = "Medium",
+            activityMode = ActivityMode.TRAINING, selectedSport = Sport.CYCLING, athleticLevel = "Medium",
             customTopThreshold = 39.0, customBottomThreshold = 36.0,
             onPauseToggle = {}, onMonitoringToggle = {}, onGoToProfile = {}, onGoToHistory = {},
-            onActivityModeChange = {}, onCustomThresholdsChange = { _, _ -> }
+            onActivityModeChange = {}, onSportChange = {}, onCustomThresholdsChange = { _, _ -> }
         )
     }
 }
