@@ -393,13 +393,42 @@ fun getTemperatureColorRanges(
         highThreshold = customTop
     } else {
         when (athleticLevel) {
-            "Low" -> { lowThreshold = 36.2; highThreshold = 37.8 }
-            "Medium" -> { lowThreshold = 36.0; highThreshold = 38.0 }
-            "High" -> { lowThreshold = 35.8; highThreshold = 38.2 }
-        }
-        if (mode == ActivityMode.RACE) {
-            lowThreshold -= 0.3
-            highThreshold += 0.3
+            "Low" -> {
+                if (mode == ActivityMode.RACE) {
+                    lowThreshold = 37.0
+                    highThreshold = 38.4
+                } else {
+                    lowThreshold = 37.0
+                    highThreshold = 38.2
+                }
+            }
+            "Medium" -> {
+                if (mode == ActivityMode.RACE) {
+                    lowThreshold = 37.2
+                    highThreshold = 39.0
+                } else {
+                    lowThreshold = 37.2
+                    highThreshold = 38.7
+                }
+            }
+            "High" -> {
+                if (mode == ActivityMode.RACE) {
+                    lowThreshold = 37.5
+                    highThreshold = 39.4
+                } else {
+                    lowThreshold = 37.5
+                    highThreshold = 39.0
+                }
+            }
+            else -> {
+                if (mode == ActivityMode.RACE) {
+                    lowThreshold = 37.2
+                    highThreshold = 39.0
+                } else {
+                    lowThreshold = 37.2
+                    highThreshold = 38.7
+                }
+            }
         }
     }
     val optimalTemp = (lowThreshold + highThreshold) / 2
