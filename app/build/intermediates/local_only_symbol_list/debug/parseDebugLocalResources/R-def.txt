@@ -22,6 +22,7 @@ id main
 layout activity_history
 layout activity_profile
 mipmap ic_launcher
+mipmap ic_launcher_foreground
 mipmap ic_launcher_round
 string app_name
 string channel_description
