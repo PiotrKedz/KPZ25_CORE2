@@ -1,0 +1,110 @@
+[
+    {
+        "merged": "com.example.innertemp.app-debug-71:/drawable_ic_launcher_background.xml.flat",
+        "source": "com.example.innertemp.app-main-73:/drawable/ic_launcher_background.xml"
+    },
+    {
+        "merged": "com.example.innertemp.app-debug-71:/mipmap-xxhdpi_ic_launcher_round.webp.flat",
+        "source": "com.example.innertemp.app-main-73:/mipmap-xxhdpi/ic_launcher_round.webp"
+    },
+    {
+        "merged": "com.example.innertemp.app-debug-71:/anim_slide_in_right.xml.flat",
+        "source": "com.example.innertemp.app-main-73:/anim/slide_in_right.xml"
+    },
+    {
+        "merged": "com.example.innertemp.app-debug-71:/xml_data_extraction_rules.xml.flat",
+        "source": "com.example.innertemp.app-main-73:/xml/data_extraction_rules.xml"
+    },
+    {
+        "merged": "com.example.innertemp.app-debug-71:/mipmap-hdpi_ic_launcher_round.webp.flat",
+        "source": "com.example.innertemp.app-main-73:/mipmap-hdpi/ic_launcher_round.webp"
+    },
+    {
+        "merged": "com.example.innertemp.app-debug-71:/xml_backup_rules.xml.flat",
+        "source": "com.example.innertemp.app-main-73:/xml/backup_rules.xml"
+    },
+    {
+        "merged": "com.example.innertemp.app-debug-71:/mipmap-xxhdpi_ic_launcher.webp.flat",
+        "source": "com.example.innertemp.app-main-73:/mipmap-xxhdpi/ic_launcher.webp"
+    },
+    {
+        "merged": "com.example.innertemp.app-debug-71:/mipmap-xxxhdpi_ic_launcher.webp.flat",
+        "source": "com.example.innertemp.app-main-73:/mipmap-xxxhdpi/ic_launcher.webp"
+    },
+    {
+        "merged": "com.example.innertemp.app-debug-71:/mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "com.example.innertemp.app-main-73:/mipmap-anydpi-v26/ic_launcher.xml"
+    },
+    {
+        "merged": "com.example.innertemp.app-debug-71:/drawable_ic_thermostat.xml.flat",
+        "source": "com.example.innertemp.app-main-73:/drawable/ic_thermostat.xml"
+    },
+    {
+        "merged": "com.example.innertemp.app-debug-71:/mipmap-hdpi_ic_launcher.webp.flat",
+        "source": "com.example.innertemp.app-main-73:/mipmap-hdpi/ic_launcher.webp"
+    },
+    {
+        "merged": "com.example.innertemp.app-debug-71:/anim_slide_out_left.xml.flat",
+        "source": "com.example.innertemp.app-main-73:/anim/slide_out_left.xml"
+    },
+    {
+        "merged": "com.example.innertemp.app-debug-71:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
+        "source": "com.example.innertemp.app-main-73:/mipmap-anydpi-v26/ic_launcher_round.xml"
+    },
+    {
+        "merged": "com.example.innertemp.app-debug-71:/layout_activity_profile.xml.flat",
+        "source": "com.example.innertemp.app-main-73:/layout/activity_profile.xml"
+    },
+    {
+        "merged": "com.example.innertemp.app-debug-71:/drawable_ic_google_logo.xml.flat",
+        "source": "com.example.innertemp.app-main-73:/drawable/ic_google_logo.xml"
+    },
+    {
+        "merged": "com.example.innertemp.app-debug-71:/mipmap-mdpi_ic_launcher_round.webp.flat",
+        "source": "com.example.innertemp.app-main-73:/mipmap-mdpi/ic_launcher_round.webp"
+    },
+    {
+        "merged": "com.example.innertemp.app-debug-71:/drawable_ic_facebook_logo.xml.flat",
+        "source": "com.example.innertemp.app-main-73:/drawable/ic_facebook_logo.xml"
+    },
+    {
+        "merged": "com.example.innertemp.app-debug-71:/layout_activity_history.xml.flat",
+        "source": "com.example.innertemp.app-main-73:/layout/activity_history.xml"
+    },
+    {
+        "merged": "com.example.innertemp.app-debug-71:/anim_slide_out_right.xml.flat",
+        "source": "com.example.innertemp.app-main-73:/anim/slide_out_right.xml"
+    },
+    {
+        "merged": "com.example.innertemp.app-debug-71:/mipmap-xhdpi_ic_launcher.webp.flat",
+        "source": "com.example.innertemp.app-main-73:/mipmap-xhdpi/ic_launcher.webp"
+    },
+    {
+        "merged": "com.example.innertemp.app-debug-71:/mipmap-xhdpi_ic_launcher_round.webp.flat",
+        "source": "com.example.innertemp.app-main-73:/mipmap-xhdpi/ic_launcher_round.webp"
+    },
+    {
+        "merged": "com.example.innertemp.app-debug-71:/drawable_social_icons.xml.flat",
+        "source": "com.example.innertemp.app-main-73:/drawable/social_icons.xml"
+    },
+    {
+        "merged": "com.example.innertemp.app-debug-71:/drawable_ic_launcher_foreground.xml.flat",
+        "source": "com.example.innertemp.app-main-73:/drawable/ic_launcher_foreground.xml"
+    },
+    {
+        "merged": "com.example.innertemp.app-debug-71:/mipmap-mdpi_ic_launcher.webp.flat",
+        "source": "com.example.innertemp.app-main-73:/mipmap-mdpi/ic_launcher.webp"
+    },
+    {
+        "merged": "com.example.innertemp.app-debug-71:/drawable_ic_battery_alert.xml.flat",
+        "source": "com.example.innertemp.app-main-73:/drawable/ic_battery_alert.xml"
+    },
+    {
+        "merged": "com.example.innertemp.app-debug-71:/anim_slide_in_left.xml.flat",
+        "source": "com.example.innertemp.app-main-73:/anim/slide_in_left.xml"
+    },
+    {
+        "merged": "com.example.innertemp.app-debug-71:/mipmap-xxxhdpi_ic_launcher_round.webp.flat",
+        "source": "com.example.innertemp.app-main-73:/mipmap-xxxhdpi/ic_launcher_round.webp"
+    }
+]
