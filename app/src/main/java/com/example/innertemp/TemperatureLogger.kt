@@ -9,7 +9,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 /**
- * Utility class for logging temperature data to files organized by date and session
+ * Utility class for logging temperature data to files organized by date, session, and sport
  */
 class TemperatureLogger(private val context: Context) {
 
@@ -23,6 +23,9 @@ class TemperatureLogger(private val context: Context) {
     // Current session ID - will be updated each time a new session starts
     private var currentSessionId = generateSessionId()
 
+    // Current sport for the session
+    private var currentSport = Sport.RUNNING
+
     /**
      * Generates a unique session ID based on current timestamp
      */
@@ -33,10 +36,12 @@ class TemperatureLogger(private val context: Context) {
     /**
      * Starts a new logging session with a fresh file
      * Call this method when starting a new recording session
+     * @param sport The sport type for this session
      */
-    fun startNewSession() {
+    fun startNewSession(sport: Sport = Sport.RUNNING) {
         currentSessionId = generateSessionId()
-        Log.d(TAG, "Started new temperature logging session: $currentSessionId")
+        currentSport = sport
+        Log.d(TAG, "Started new temperature logging session: $currentSessionId for sport: ${sport.name}")
     }
 
     /**
@@ -49,14 +54,14 @@ class TemperatureLogger(private val context: Context) {
         val timeString = timeFormat.format(currentDate)
 
         // Add detailed debug logging
-        Log.d(TAG, "Logging temperature: $coreTemp°C at $timeString on $dateString (Session: $currentSessionId)")
+        Log.d(TAG, "Logging temperature: $coreTemp°C at $timeString on $dateString (Session: $currentSessionId, Sport: ${currentSport.name})")
 
-        val entry = "$timeString,$coreTemp\n"
+        val entry = "$timeString,$coreTemp,${currentSport.name}\n"
 
         try {
             // Get directory for app's files
             val directory = context.filesDir
-            val sessionFile = File(directory, "temp_${dateString}_session_${currentSessionId}.csv")
+            val sessionFile = File(directory, "temp_${dateString}_${currentSport.name.lowercase()}_session_${currentSessionId}.csv")
 
             Log.d(TAG, "File path: ${sessionFile.absolutePath}")
 
@@ -67,7 +72,7 @@ class TemperatureLogger(private val context: Context) {
 
                 // Add CSV header
                 FileWriter(sessionFile, true).use { writer ->
-                    writer.append("time,temperature\n")
+                    writer.append("time,temperature,sport\n")
                     writer.flush() // Force write to disk
                 }
             }
@@ -78,26 +83,27 @@ class TemperatureLogger(private val context: Context) {
                 writer.flush() // Force write to disk
             }
 
-            Log.d(TAG, "Successfully logged temperature: $coreTemp°C")
+            Log.d(TAG, "Successfully logged temperature: $coreTemp°C for sport: ${currentSport.name}")
         } catch (e: IOException) {
             Log.e(TAG, "Error writing temperature data: ${e.message}", e)
         }
     }
 
     /**
-     * Returns all temperature readings for a specific date and session
+     * Returns all temperature readings for a specific date, session and sport
      * @param dateString The date in "yyyy-MM-dd" format
      * @param sessionId The session identifier
+     * @param sport The sport type
      * @return List of temperature entries or null if no data
      */
-    fun getTemperatureDataForSession(dateString: String, sessionId: String): List<TemperatureEntry>? {
-        val file = File(context.filesDir, "temp_${dateString}_session_${sessionId}.csv")
+    fun getTemperatureDataForSession(dateString: String, sessionId: String, sport: Sport): List<TemperatureEntry>? {
+        val file = File(context.filesDir, "temp_${dateString}_${sport.name.lowercase()}_session_${sessionId}.csv")
 
         Log.d(TAG, "Checking for temperature data file: ${file.absolutePath}")
         Log.d(TAG, "File exists: ${file.exists()}, readable: ${file.canRead()}, size: ${if (file.exists()) file.length() else 0} bytes")
 
         if (!file.exists() || !file.canRead()) {
-            Log.d(TAG, "No temperature data for session $sessionId on $dateString")
+            Log.d(TAG, "No temperature data for session $sessionId on $dateString for sport ${sport.name}")
             return null
         }
 
@@ -119,9 +125,10 @@ class TemperatureLogger(private val context: Context) {
                             if (parts.size >= 2) {
                                 val time = parts[0].trim()
                                 val temp = parts[1].trim().toDoubleOrNull()
+                                val sportName = if (parts.size >= 3) parts[2].trim() else sport.name
 
                                 if (temp != null) {
-                                    entries.add(TemperatureEntry(time, temp))
+                                    entries.add(TemperatureEntry(time, temp, Sport.valueOf(sportName)))
                                 } else {
                                     Log.w(TAG, "Invalid temperature value at line $lineCount: ${parts[1]}")
                                 }
@@ -135,7 +142,7 @@ class TemperatureLogger(private val context: Context) {
                 }
             }
 
-            Log.d(TAG, "Retrieved ${entries.size} temperature entries for session $sessionId on $dateString")
+            Log.d(TAG, "Retrieved ${entries.size} temperature entries for session $sessionId on $dateString for sport ${sport.name}")
             return entries
 
         } catch (e: IOException) {
@@ -149,9 +156,10 @@ class TemperatureLogger(private val context: Context) {
      * @param year The year
      * @param month The month (1-12)
      * @param day The day of month
+     * @param sport Optional sport filter
      * @return List of temperature entries or null if no data
      */
-    fun getTemperatureDataForDate(year: Int, month: Int, day: Int): List<TemperatureEntry>? {
+    fun getTemperatureDataForDate(year: Int, month: Int, day: Int, sport: Sport? = null): List<TemperatureEntry>? {
         val calendar = Calendar.getInstance()
         calendar.set(year, month - 1, day)  // Month is 0-indexed in Calendar
         val dateString = dateFormat.format(calendar.time)
@@ -162,16 +170,30 @@ class TemperatureLogger(private val context: Context) {
         // Get all files for this date
         val directory = context.filesDir
         val filesForDate = directory.listFiles { file ->
-            file.name.startsWith("temp_${dateString}") && file.name.endsWith(".csv")
+            val matchesDate = file.name.startsWith("temp_${dateString}")
+            val matchesSport = sport == null || file.name.contains("_${sport.name.lowercase()}_")
+            matchesDate && matchesSport && file.name.endsWith(".csv")
         } ?: return null
 
-        Log.d(TAG, "Found ${filesForDate.size} session files for date $dateString")
+        Log.d(TAG, "Found ${filesForDate.size} session files for date $dateString" +
+                (sport?.let { " and sport ${it.name}" } ?: ""))
 
         // Process each file
         filesForDate.forEach { file ->
             try {
                 var isFirstLine = true
                 var lineCount = 0
+
+                // Extract sport from filename if possible
+                val filenamePattern = "temp_.*?_(\\w+)_session_.*?\\.csv".toRegex()
+                val matchResult = filenamePattern.find(file.name)
+                val fileSport = matchResult?.groupValues?.get(1)?.uppercase()?.let {
+                    try {
+                        Sport.valueOf(it)
+                    } catch (e: Exception) {
+                        null
+                    }
+                }
 
                 file.bufferedReader().useLines { lines ->
                     lines.forEach { line ->
@@ -184,9 +206,20 @@ class TemperatureLogger(private val context: Context) {
                                 if (parts.size >= 2) {
                                     val time = parts[0].trim()
                                     val temp = parts[1].trim().toDoubleOrNull()
+                                    // Use sport from the CSV if available, otherwise from filename
+                                    val entrySport = if (parts.size >= 3) {
+                                        try {
+                                            Sport.valueOf(parts[2].trim())
+                                        } catch (e: Exception) {
+                                            fileSport ?: Sport.RUNNING
+                                        }
+                                    } else {
+                                        fileSport ?: Sport.RUNNING
+                                    }
+
 
                                     if (temp != null) {
-                                        allEntries.add(TemperatureEntry(time, temp))
+                                        allEntries.add(TemperatureEntry(time, temp, entrySport))
                                     } else {
                                         Log.w(TAG, "Invalid temperature value at line $lineCount: ${parts[1]}")
                                     }
@@ -202,15 +235,17 @@ class TemperatureLogger(private val context: Context) {
             }
         }
 
-        Log.d(TAG, "Retrieved ${allEntries.size} total temperature entries for $dateString")
+        Log.d(TAG, "Retrieved ${allEntries.size} total temperature entries for $dateString" +
+                (sport?.let { " and sport ${it.name}" } ?: ""))
         return if (allEntries.isEmpty()) null else allEntries
     }
 
     /**
      * Calculates the min, max, and average temperature for a day across all sessions
+     * @param sport Optional sport filter
      */
-    fun getTemperatureStatsForDate(year: Int, month: Int, day: Int): TemperatureStats? {
-        val entries = getTemperatureDataForDate(year, month, day) ?: return null
+    fun getTemperatureStatsForDate(year: Int, month: Int, day: Int, sport: Sport? = null): TemperatureStats? {
+        val entries = getTemperatureDataForDate(year, month, day, sport) ?: return null
 
         if (entries.isEmpty()) return null
 
@@ -230,14 +265,16 @@ class TemperatureLogger(private val context: Context) {
             lowest = min,
             highest = max,
             average = avg,
-            count = entries.size
+            count = entries.size,
+            sport = sport
         )
     }
 
     /**
      * Gets a list of all days that have temperature data in the given month
+     * @param sport Optional sport filter
      */
-    fun getDaysWithDataInMonth(year: Int, month: Int): Set<Int> {
+    fun getDaysWithDataInMonth(year: Int, month: Int, sport: Sport? = null): Set<Int> {
         val days = mutableSetOf<Int>()
         val directory = context.filesDir
 
@@ -251,7 +288,11 @@ class TemperatureLogger(private val context: Context) {
         val allFiles = directory.listFiles() ?: emptyArray()
         Log.d(TAG, "Total files in directory: ${allFiles.size}")
 
-        val matchingFiles = allFiles.filter { it.name.startsWith(prefix) && it.name.endsWith(".csv") }
+        val matchingFiles = allFiles.filter {
+            val matchesPrefix = it.name.startsWith(prefix) && it.name.endsWith(".csv")
+            val matchesSport = sport == null || it.name.contains("_${sport.name.lowercase()}_")
+            matchesPrefix && matchesSport
+        }
         Log.d(TAG, "Matching files found: ${matchingFiles.size}")
 
         // Process matching files
@@ -267,7 +308,8 @@ class TemperatureLogger(private val context: Context) {
             }
         }
 
-        Log.d(TAG, "Found data for ${days.size} days in $year-$monthStr")
+        Log.d(TAG, "Found data for ${days.size} days in $year-$monthStr" +
+                (sport?.let { " for sport ${it.name}" } ?: ""))
         return days
     }
 
@@ -276,18 +318,81 @@ class TemperatureLogger(private val context: Context) {
      * @param year The year
      * @param month The month (1-12)
      * @param day The day of month
+     * @param sport Optional sport filter
      * @return List of session IDs or empty list if no data
      */
-    fun getSessionsForDate(year: Int, month: Int, day: Int): List<String> {
+    fun getSessionsForDate(year: Int, month: Int, day: Int, sport: Sport? = null): List<SessionInfo> {
         val calendar = Calendar.getInstance()
         calendar.set(year, month - 1, day)  // Month is 0-indexed in Calendar
         val dateString = dateFormat.format(calendar.time)
 
-        val sessions = mutableListOf<String>()
+        val sessions = mutableListOf<SessionInfo>()
         val directory = context.filesDir
 
-        // Pattern: temp_YYYY-MM-DD_session_SESSIONID.csv
-        val prefix = "temp_${dateString}_session_"
+        // Pattern: temp_YYYY-MM-DD_SPORT_session_SESSIONID.csv
+        val prefix = "temp_${dateString}_"
+        val suffix = ".csv"
+
+        val filesForDate = directory.listFiles { file ->
+            val matchesDate = file.name.startsWith(prefix) && file.name.endsWith(suffix)
+            val matchesSport = sport == null || file.name.contains("_${sport.name.lowercase()}_")
+            matchesDate && matchesSport
+        } ?: return emptyList()
+
+        filesForDate.forEach { file ->
+            try {
+                // Pattern: temp_YYYY-MM-DD_SPORT_session_SESSIONID.csv
+                val sportPattern = "temp_.*?_(\\w+)_session_(.+?)\\.csv".toRegex()
+                val match = sportPattern.find(file.name)
+
+                if (match != null && match.groupValues.size >= 3) {
+                    val sportName = match.groupValues[1].uppercase()
+                    val sessionId = match.groupValues[2]
+
+                    try {
+                        val sportEnum = Sport.valueOf(sportName)
+                        if (sport == null || sportEnum == sport) {
+                            sessions.add(SessionInfo(sessionId, sportEnum))
+                        }
+                    } catch (e: IllegalArgumentException) {
+                        Log.e(TAG, "Invalid sport name in filename: $sportName", e)
+                    }
+                } else {
+                    // Fallback for old format files without sport
+                    val oldFormatPattern = "temp_.*?_session_(.+?)\\.csv".toRegex()
+                    val oldMatch = oldFormatPattern.find(file.name)
+
+                    if (oldMatch != null && oldMatch.groupValues.size >= 2) {
+                        val sessionId = oldMatch.groupValues[1]
+                        if (sport == null || sport == Sport.RUNNING) {  // Default to RUNNING for old format
+                            sessions.add(SessionInfo(sessionId, Sport.RUNNING))
+                        }
+                    } else {
+                        Log.e(TAG, "Couldn't extract session ID from filename: ${file.name}")
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error extracting session info from filename: ${file.name}", e)
+            }
+        }
+
+        Log.d(TAG, "Found ${sessions.size} sessions for date $dateString" +
+                (sport?.let { " and sport ${it.name}" } ?: ""))
+        return sessions
+    }
+
+    /**
+     * Gets a list of all sports that have data for a specific date
+     */
+    fun getSportsForDate(year: Int, month: Int, day: Int): List<Sport> {
+        val calendar = Calendar.getInstance()
+        calendar.set(year, month - 1, day)  // Month is 0-indexed in Calendar
+        val dateString = dateFormat.format(calendar.time)
+
+        val sports = mutableSetOf<Sport>()
+        val directory = context.filesDir
+
+        val prefix = "temp_${dateString}_"
         val suffix = ".csv"
 
         val filesForDate = directory.listFiles { file ->
@@ -296,24 +401,38 @@ class TemperatureLogger(private val context: Context) {
 
         filesForDate.forEach { file ->
             try {
-                val sessionId = file.name.substring(prefix.length, file.name.length - suffix.length)
-                sessions.add(sessionId)
+                val sportPattern = "temp_.*?_(\\w+)_session_.*?\\.csv".toRegex()
+                val match = sportPattern.find(file.name)
+
+                if (match != null && match.groupValues.size >= 2) {
+                    val sportName = match.groupValues[1].uppercase()
+                    try {
+                        sports.add(Sport.valueOf(sportName))
+                    } catch (e: IllegalArgumentException) {
+                        Log.e(TAG, "Invalid sport name in filename: $sportName", e)
+                    }
+                } else {
+                    // For old format files, assume RUNNING
+                    if (file.name.contains("_session_")) {
+                        sports.add(Sport.RUNNING)
+                    }
+                }
             } catch (e: Exception) {
-                Log.e(TAG, "Error extracting session ID from filename: ${file.name}", e)
+                Log.e(TAG, "Error extracting sport from filename: ${file.name}", e)
             }
         }
 
-        Log.d(TAG, "Found ${sessions.size} sessions for date $dateString")
-        return sessions
+        return sports.toList()
     }
 }
 
 /**
- * Represents a single temperature reading with time
+ * Represents a single temperature reading with time and sport
  */
 data class TemperatureEntry(
     val time: String,
-    val temperature: Double
+    val temperature: Double,
+    val sport: Sport = Sport.RUNNING
 )
 
 /**
@@ -323,5 +442,14 @@ data class TemperatureStats(
     val lowest: Double,
     val highest: Double,
     val average: Double,
-    val count: Int
+    val count: Int,
+    val sport: Sport? = null
+)
+
+/**
+ * Represents session information
+ */
+data class SessionInfo(
+    val id: String,
+    val sport: Sport
 )

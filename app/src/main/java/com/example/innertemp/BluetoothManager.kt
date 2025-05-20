@@ -37,9 +37,10 @@ class BluetoothManager(private val context: Context) {
     private var onPauseStatusChanged: ((Boolean) -> Unit)? = null
     private var onDataReceived: ((Double, Double, Double, Double) -> Unit)? = null
 
-    private var rssiUpdateInterval = 100L // 10 seconds
-    private var lastRssiValue = 100 // Default poor signal
+    private var rssiUpdateInterval = 2000L // Changed from 100ms to 2 seconds
+    private var lastRssiValue = -100 // Default poor signal
     private var isUpdatingRssi = false
+    private var rssiUpdateRunnable: Runnable? = null
 
     // Define the mainHandler for RSSI updates
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -155,19 +156,34 @@ class BluetoothManager(private val context: Context) {
     }
 
     private fun startRssiUpdates() {
-        if (isUpdatingRssi) return
+        if (isUpdatingRssi) {
+            stopRssiUpdates() // Stop existing updates before starting new ones
+        }
 
         isUpdatingRssi = true
-        updateRssi()
+
+        rssiUpdateRunnable = Runnable {
+            updateRssi()
+        }
+
+        // Start the first update
+        rssiUpdateRunnable?.let { mainHandler.post(it) }
+
+        Log.d(TAG, "RSSI updates started with interval: $rssiUpdateInterval ms")
     }
 
     private fun stopRssiUpdates() {
         isUpdatingRssi = false
-        mainHandler.removeCallbacksAndMessages(null)
+        rssiUpdateRunnable?.let { mainHandler.removeCallbacks(it) }
+        rssiUpdateRunnable = null
+        Log.d(TAG, "RSSI updates stopped")
     }
 
     private fun updateRssi() {
-        if (!isUpdatingRssi || bluetoothGatt == null) return
+        if (!isUpdatingRssi || bluetoothGatt == null) {
+            Log.d(TAG, "Skipping RSSI update: isUpdating=$isUpdatingRssi, gatt=${bluetoothGatt != null}")
+            return
+        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             if (ActivityCompat.checkSelfPermission(
@@ -175,19 +191,40 @@ class BluetoothManager(private val context: Context) {
                     Manifest.permission.BLUETOOTH_CONNECT
                 ) != PackageManager.PERMISSION_GRANTED
             ) {
+                Log.e(TAG, "Missing BLUETOOTH_CONNECT permission for RSSI update")
                 return
             }
         }
 
-        bluetoothGatt?.readRemoteRssi()
+        try {
+            bluetoothGatt?.readRemoteRssi()
+            Log.d(TAG, "Requested RSSI reading")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to read RSSI: ${e.message}")
+        }
 
-        mainHandler.postDelayed({
-            updateRssi()
-        }, rssiUpdateInterval)
+        // Schedule the next update only if still updating
+        if (isUpdatingRssi) {
+            rssiUpdateRunnable?.let {
+                mainHandler.removeCallbacks(it)
+                mainHandler.postDelayed(it, rssiUpdateInterval)
+            }
+        }
     }
 
     fun setRssiUpdateInterval(intervalMs: Long) {
-        rssiUpdateInterval = intervalMs
+        if (intervalMs < 1000) {
+            Log.w(TAG, "RSSI update interval too short, setting to minimum 1000ms")
+            rssiUpdateInterval = 1000L
+        } else {
+            rssiUpdateInterval = intervalMs
+        }
+
+        // Restart updates with new interval if already running
+        if (isUpdatingRssi && bluetoothGatt != null) {
+            stopRssiUpdates()
+            startRssiUpdates()
+        }
     }
 
     fun setOnConnectionStatusChanged(callback: (Boolean, Int) -> Unit) {
@@ -292,6 +329,13 @@ class BluetoothManager(private val context: Context) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 lastRssiValue = rssi
                 Log.d(TAG, "RSSI: $rssi dBm")
+
+                // Update UI with new RSSI value
+                mainHandler.post {
+                    onConnectionStatusChanged?.invoke(true, lastRssiValue)
+                }
+            } else {
+                Log.e(TAG, "Failed to read RSSI, status: $status")
             }
         }
 
@@ -311,9 +355,11 @@ class BluetoothManager(private val context: Context) {
                     onConnectionStatusChanged?.invoke(true, lastRssiValue)
                 }
                 gatt.discoverServices()
+                // Start RSSI updates after connection established
                 startRssiUpdates()
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 Log.d(TAG, "Disconnected from GATT server")
+                // Ensure RSSI updates are stopped when disconnected
                 stopRssiUpdates()
                 mainHandler.post {
                     onConnectionStatusChanged?.invoke(false, -100)
@@ -516,14 +562,6 @@ class BluetoothManager(private val context: Context) {
 
     fun getMonitoringStatus(): Boolean {
         return isMonitoring
-    }
-
-    fun getPauseStatus(): Boolean {
-        return isPaused
-    }
-
-    fun getRssiValue(): Int {
-        return lastRssiValue
     }
 
     fun closeConnection() {

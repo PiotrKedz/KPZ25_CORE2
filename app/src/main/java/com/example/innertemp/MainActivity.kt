@@ -232,8 +232,8 @@ class MainActivity : ComponentActivity() {
             if (!isConnected) _batteryLevel.value = 0.0
             _connectionQuality.value = if (!isConnected) BluetoothConnectionQuality.DISCONNECTED
             else when {
-                signalStrength > -60 -> BluetoothConnectionQuality.GOOD
-                signalStrength > -80 -> BluetoothConnectionQuality.MEDIUM
+                signalStrength > -90 -> BluetoothConnectionQuality.GOOD
+                signalStrength > -120 -> BluetoothConnectionQuality.MEDIUM
                 else -> BluetoothConnectionQuality.BAD
             }
         }
@@ -241,7 +241,8 @@ class MainActivity : ComponentActivity() {
         bluetoothManager.setOnMonitoringStatusChanged { isMonitoring ->
             _isMonitoring.value = isMonitoring
             if (isMonitoring) {
-                temperatureLogger.startNewSession()
+                // Start a new session with the currently selected sport
+                temperatureLogger.startNewSession(_selectedSport.value)
                 resetAverageTemperature()
             }
         }

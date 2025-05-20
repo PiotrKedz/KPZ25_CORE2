@@ -42,6 +42,12 @@ import androidx.lifecycle.LifecycleEventObserver
 import com.example.innertemp.ui.theme.Blue
 import com.example.innertemp.ui.theme.Green
 import com.example.innertemp.ui.theme.Red
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 
 
 class HistoryActivity : AppCompatActivity() {
@@ -153,25 +159,47 @@ fun HistoryContent(
     }
 
     var selectedDay by remember { mutableStateOf<Int?>(null) }
-    var selectedDayData by remember { mutableStateOf<List<TemperatureEntry>?>(null) }
-    var selectedDayStats by remember { mutableStateOf<TemperatureStats?>(null) }
-    var selectedDaySessions by remember { mutableStateOf<List<String>>(emptyList()) }
+    var selectedDayActivities by remember { mutableStateOf<List<String>>(emptyList()) }
+    var selectedDayDataByActivity by remember { mutableStateOf<Map<String, List<TemperatureEntry>>?>(null) }
+    var selectedDayStatsByActivity by remember { mutableStateOf<Map<String, TemperatureStats>?>(null) }
+    var selectedDaySessions by remember { mutableStateOf<List<SessionInfo>>(emptyList()) }
     var selectedSession by remember { mutableStateOf<String?>(null) }
     var selectedSessionData by remember { mutableStateOf<List<TemperatureEntry>?>(null) }
+
+    var selectedTab by remember { mutableStateOf(0) }
 
     // Update selected day data when day changes
     LaunchedEffect(selectedDay, selectedMonth, selectedYear) {
         selectedDay?.let { day ->
-            selectedDayData =
-                temperatureLogger.getTemperatureDataForDate(selectedYear, selectedMonth, day)
-            selectedDayStats =
-                temperatureLogger.getTemperatureStatsForDate(selectedYear, selectedMonth, day)
+            // Get sports for this day (adapting to use Sports instead of activities)
+            val sports = temperatureLogger.getSportsForDate(selectedYear, selectedMonth, day)
+            selectedDayActivities = sports.map { it.name }
 
-            selectedDaySessions =
-                temperatureLogger.getSessionsForDate(selectedYear, selectedMonth, day)
+            // Get data grouped by activity/sport
+            val dataByActivity = mutableMapOf<String, List<TemperatureEntry>>()
+            val statsByActivity = mutableMapOf<String, TemperatureStats>()
+
+            sports.forEach { sport ->
+                temperatureLogger.getTemperatureDataForDate(selectedYear, selectedMonth, day, sport)?.let { data ->
+                    dataByActivity[sport.name] = data
+                }
+
+                temperatureLogger.getTemperatureStatsForDate(selectedYear, selectedMonth, day, sport)?.let { stats ->
+                    statsByActivity[sport.name] = stats
+                }
+            }
+
+            selectedDayDataByActivity = dataByActivity
+            selectedDayStatsByActivity = statsByActivity
+
+            // Get sessions for this day
+            selectedDaySessions = temperatureLogger.getSessionsForDate(selectedYear, selectedMonth, day)
 
             selectedSession = null
             selectedSessionData = null
+
+            // Reset tab selection
+            selectedTab = 0
         }
     }
 
@@ -182,7 +210,17 @@ fun HistoryContent(
             calendar.set(selectedYear, selectedMonth - 1, selectedDay!!)
             val dateString = dateFormat.format(calendar.time)
 
-            selectedSessionData = temperatureLogger.getTemperatureDataForSession(dateString, selectedSession!!)
+            // Find the session info to get the sport
+            val sessionInfo = selectedDaySessions.find { it.id == selectedSession }
+
+            // If found, get data for this session with the appropriate sport
+            sessionInfo?.let { info ->
+                selectedSessionData = temperatureLogger.getTemperatureDataForSession(
+                    dateString,
+                    selectedSession!!,
+                    info.sport
+                )
+            }
         }
     }
 
@@ -202,8 +240,9 @@ fun HistoryContent(
                     selectedMonth--
                 }
                 selectedDay = null
-                selectedDayData = null
-                selectedDayStats = null
+                selectedDayActivities = emptyList()
+                selectedDayDataByActivity = null
+                selectedDayStatsByActivity = null
                 selectedSession = null
                 selectedSessionData = null
             }) {
@@ -223,8 +262,9 @@ fun HistoryContent(
                     selectedMonth++
                 }
                 selectedDay = null
-                selectedDayData = null
-                selectedDayStats = null
+                selectedDayActivities = emptyList()
+                selectedDayDataByActivity = null
+                selectedDayStatsByActivity = null
                 selectedSession = null
                 selectedSessionData = null
             }) {
@@ -301,9 +341,42 @@ fun HistoryContent(
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
 
-                if (selectedDaySessions.isNotEmpty()) {
+                if (selectedDayActivities.isNotEmpty()) {
+                    // Tab row for activities
+                    val tabs = selectedDayActivities + "All Activities"
+                    if (selectedTab >= tabs.size) selectedTab = 0
+
+                    ScrollableTabRow(
+                        selectedTabIndex = selectedTab,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        tabs.forEachIndexed { index, title ->
+                            Tab(
+                                selected = selectedTab == index,
+                                onClick = { selectedTab = index },
+                                text = { Text(title) }
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Display content based on selected tab
+                    val selectedActivity = if (selectedTab < selectedDayActivities.size)
+                        selectedDayActivities[selectedTab] else null
+
+                    // Filter sessions by selected activity if needed
+                    val filteredSessions = if (selectedActivity != null) {
+                        selectedDaySessions.filter { it.sport.name == selectedActivity }
+                    } else {
+                        selectedDaySessions
+                    }
+
                     Text(
-                        text = "Sessions (${selectedDaySessions.size}):",
+                        text = if (selectedActivity != null)
+                            "Sessions for $selectedActivity (${filteredSessions.size})"
+                        else
+                            "All Sessions (${filteredSessions.size})",
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(vertical = 8.dp)
@@ -314,14 +387,14 @@ fun HistoryContent(
                             .fillMaxWidth()
                             .padding(vertical = 8.dp)
                     ) {
-                        selectedDaySessions.forEachIndexed { index, sessionId ->
+                        filteredSessions.forEachIndexed { index, sessionInfo ->
                             val formattedTime = try {
-                                val timeStamp = sessionId.substringAfter("_")
+                                val timeStamp = sessionInfo.id.substringAfter("_")
                                 val hour = timeStamp.substring(0, 2)
                                 val minute = timeStamp.substring(2, 4)
                                 "$hour:$minute"
                             } catch (e: Exception) {
-                                sessionId
+                                sessionInfo.id
                             }
 
                             Card(
@@ -329,10 +402,10 @@ fun HistoryContent(
                                     .fillMaxWidth()
                                     .padding(vertical = 4.dp)
                                     .clickable {
-                                        selectedSession = if (selectedSession == sessionId) null else sessionId
+                                        selectedSession = if (selectedSession == sessionInfo.id) null else sessionInfo.id
                                     },
                                 colors = CardDefaults.cardColors(
-                                    containerColor = if (selectedSession == sessionId)
+                                    containerColor = if (selectedSession == sessionInfo.id)
                                         MaterialTheme.colorScheme.primaryContainer
                                     else
                                         MaterialTheme.colorScheme.surface
@@ -346,18 +419,20 @@ fun HistoryContent(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = "Session $formattedTime",
+                                        text = "Session $formattedTime - ${sessionInfo.sport.name}",
                                         style = MaterialTheme.typography.bodyLarge
                                     )
 
-                                    Text(
-                                        text = if (selectedSession == sessionId) "▼" else "▶",
-                                        style = MaterialTheme.typography.bodyLarge
+                                    Icon(
+                                        imageVector = if (selectedSession == sessionInfo.id)
+                                            Icons.Default.KeyboardArrowDown else Icons.Default.KeyboardArrowUp,
+                                        contentDescription = if (selectedSession == sessionInfo.id)
+                                            "Collapse" else "Expand"
                                     )
                                 }
                             }
 
-                            if (selectedSession == sessionId) {
+                            if (selectedSession == sessionInfo.id) {
                                 val tempData = selectedSessionData
                                 if (tempData != null && tempData.isNotEmpty()) {
                                     // Display temperature chart for this session
@@ -463,14 +538,42 @@ fun HistoryContent(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
+                    // Show daily summary for the selected activity or all activities
                     Text(
-                        text = "Daily Summary",
+                        text = if (selectedActivity != null)
+                            "$selectedActivity Summary" else "Daily Summary",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(vertical = 8.dp)
                     )
 
-                    selectedDayStats?.let { stats ->
+                    val stats = if (selectedActivity != null)
+                        selectedDayStatsByActivity?.get(selectedActivity)
+                    else {
+                        // Calculate overall stats from all activities
+                        var lowest = Double.MAX_VALUE
+                        var highest = Double.MIN_VALUE
+                        var totalSum = 0.0
+                        var totalCount = 0
+
+                        selectedDayStatsByActivity?.values?.forEach { activityStats ->
+                            if (activityStats.lowest < lowest) lowest = activityStats.lowest
+                            if (activityStats.highest > highest) highest = activityStats.highest
+                            totalSum += activityStats.average * activityStats.count
+                            totalCount += activityStats.count
+                        }
+
+                        if (totalCount > 0) {
+                            TemperatureStats(
+                                lowest = lowest,
+                                highest = highest,
+                                average = totalSum / totalCount,
+                                count = totalCount
+                            )
+                        } else null
+                    }
+
+                    stats?.let { statsData ->
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -491,7 +594,7 @@ fun HistoryContent(
                                             style = MaterialTheme.typography.bodyMedium
                                         )
                                         Text(
-                                            text = String.format("%.1f°C", stats.lowest),
+                                            text = String.format("%.1f°C", statsData.lowest),
                                             style = MaterialTheme.typography.bodyLarge,
                                             color = Blue
                                         )
@@ -503,7 +606,7 @@ fun HistoryContent(
                                             style = MaterialTheme.typography.bodyMedium
                                         )
                                         Text(
-                                            text = String.format("%.1f°C", stats.average),
+                                            text = String.format("%.1f°C", statsData.average),
                                             style = MaterialTheme.typography.bodyLarge,
                                             color = Green
                                         )
@@ -515,7 +618,7 @@ fun HistoryContent(
                                             style = MaterialTheme.typography.bodyMedium
                                         )
                                         Text(
-                                            text = String.format("%.1f°C", stats.highest),
+                                            text = String.format("%.1f°C", statsData.highest),
                                             style = MaterialTheme.typography.bodyLarge,
                                             color = Red
                                         )
@@ -524,8 +627,13 @@ fun HistoryContent(
 
                                 Spacer(modifier = Modifier.height(8.dp))
 
+                                val sessionCount = if (selectedActivity != null)
+                                    filteredSessions.size
+                                else
+                                    selectedDaySessions.size
+
                                 Text(
-                                    text = "Total readings: ${stats.count} across ${selectedDaySessions.size} sessions",
+                                    text = "Total readings: ${statsData.count} across $sessionCount sessions",
                                     style = MaterialTheme.typography.bodyMedium
                                 )
                             }
@@ -599,7 +707,6 @@ fun TemperatureChart(
     temperatureEntries: List<TemperatureEntry>,
     modifier: Modifier = Modifier
 ) {
-    MaterialTheme.typography
     val colors = MaterialTheme.colorScheme
 
     AndroidView(
