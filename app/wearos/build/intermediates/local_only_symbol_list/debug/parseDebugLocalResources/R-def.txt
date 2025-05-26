@@ -1,0 +1,10 @@
+R_DEF: Internal format may change without notice
+local
+drawable splash_icon
+drawable tile_preview
+mipmap ic_launcher
+string app_name
+string complication_label
+string hello_world
+string tile_label
+style MainActivityTheme.Starting
