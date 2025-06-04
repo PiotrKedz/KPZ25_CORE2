@@ -39,8 +39,113 @@ import androidx.compose.material.icons.outlined.EmojiEvents
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.DirectionsBike
 import androidx.compose.material.icons.outlined.Kayaking
+import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.window.Dialog
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
+import kotlin.math.roundToInt
+import androidx.compose.material.icons.filled.*
+
+// Replace with these correct imports:
+import androidx.compose.material.icons.filled.Battery1Bar
+import androidx.compose.material.icons.filled.Battery2Bar
+import androidx.compose.material.icons.filled.Battery3Bar
+import androidx.compose.material.icons.filled.Battery4Bar
+import androidx.compose.material.icons.filled.Battery5Bar
+import androidx.compose.material.icons.filled.Battery6Bar
+import androidx.compose.material.icons.filled.BatteryFull
+
+// Alternative approach - use a single battery icon with different colors:
+import androidx.compose.material.icons.filled.Battery0Bar
+import androidx.compose.material.icons.filled.BatteryAlert
+import androidx.compose.material.icons.filled.BatteryChargingFull
+import androidx.compose.material.icons.filled.BatteryStd
+
+
+// Add these imports to the top of your MainActivity.kt file
+
+// Lazy Column and Foundation imports
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyListScope
+
+// UI and Layout imports that might be missing
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.foundation.layout.size
+
+// Runtime imports for state management
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableDoubleStateOf
+
+// Additional Material3 components that might be needed
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.Slider
+import androidx.compose.material3.TextButton
+
+// Window and Dialog imports
+import androidx.compose.ui.window.DialogProperties
+
+// Heat Zone enum
+enum class TemperatureZone {
+    TOO_LOW,
+    STEP_LOWER,
+    PERFECT,
+    STEP_HIGHER,
+    TOO_HIGH
+}
+
+// Zone data class
+data class ZoneData(
+    val zone: TemperatureZone,
+    val label: String,
+    val color: Color,
+    val icon: String,
+    var timeInSeconds: Int = 0
+) {
+    fun getPercentage(totalTime: Int): Float {
+        return if (totalTime > 0) (timeInSeconds.toFloat() / totalTime) * 100f else 0f
+    }
+
+    fun getFormattedTime(): String {
+        return if (timeInSeconds < 60) "${timeInSeconds}s"
+        else {
+            val minutes = timeInSeconds / 60
+            val seconds = timeInSeconds % 60
+            if (seconds > 0) "${minutes}m ${seconds}s" else "${minutes}m"
+        }
+    }
+}
+
+// Function to determine temperature zone
+fun getTemperatureZone(temp: Double, lowThreshold: Double, highThreshold: Double): TemperatureZone {
+    val optimalTemp = (lowThreshold + highThreshold) / 2
+    val stepSize = (highThreshold - lowThreshold) / 4
+
+    return when {
+        temp < lowThreshold - stepSize -> TemperatureZone.TOO_LOW
+        temp < lowThreshold -> TemperatureZone.STEP_LOWER
+        temp <= optimalTemp + stepSize/2 -> TemperatureZone.PERFECT
+        temp <= highThreshold -> TemperatureZone.STEP_HIGHER
+        else -> TemperatureZone.TOO_HIGH
+    }
+}
+
+// Function to get zone range description
+fun getZoneRange(zone: TemperatureZone, lowThreshold: Double, highThreshold: Double): String {
+    val optimalTemp = (lowThreshold + highThreshold) / 2
+    val stepSize = (highThreshold - lowThreshold) / 4
+
+    return when (zone) {
+        TemperatureZone.TOO_LOW -> "< ${String.format("%.1f", lowThreshold - stepSize)}°C"
+        TemperatureZone.STEP_LOWER -> "${String.format("%.1f", lowThreshold - stepSize)} - ${String.format("%.1f", lowThreshold)}°C"
+        TemperatureZone.PERFECT -> "${String.format("%.1f", lowThreshold)} - ${String.format("%.1f", optimalTemp + stepSize/8)}°C"
+        TemperatureZone.STEP_HIGHER -> "${String.format("%.1f", optimalTemp + stepSize/8)} - ${String.format("%.1f", highThreshold)}°C"
+        TemperatureZone.TOO_HIGH -> "> ${String.format("%.1f", highThreshold)}°C"
+    }
+}
 
 class MainActivity : ComponentActivity() {
     private lateinit var bluetoothManager: BluetoothManager
@@ -63,6 +168,12 @@ class MainActivity : ComponentActivity() {
     private val _customTopTemperatureThreshold = mutableStateOf(38.5)
     private val _customBottomTemperatureThreshold = mutableStateOf(36.5)
     private lateinit var notificationsManager: NotificationsManager
+
+    // Heat Zone tracking
+    private val _zoneDataMap = mutableStateMapOf<TemperatureZone, ZoneData>()
+    private val _sessionStartTime = mutableStateOf(0L)
+    private val _lastZoneUpdateTime = mutableStateOf(0L)
+    private val _currentZone = mutableStateOf(TemperatureZone.PERFECT)
 
     private val enableBtLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -120,6 +231,58 @@ class MainActivity : ComponentActivity() {
         } else {
             permissionLauncher.launch(permissions)
         }
+    }
+
+    private fun initializeZoneData() {
+        _zoneDataMap.clear()
+        _zoneDataMap[TemperatureZone.TOO_LOW] = ZoneData(
+            TemperatureZone.TOO_LOW, "Too Low", Color(0xFF3B82F6), "❄️"
+        )
+        _zoneDataMap[TemperatureZone.STEP_LOWER] = ZoneData(
+            TemperatureZone.STEP_LOWER, "Step Lower", Color(0xFF06B6D4), "⬇️"
+        )
+        _zoneDataMap[TemperatureZone.PERFECT] = ZoneData(
+            TemperatureZone.PERFECT, "Perfect", Color(0xFF10B981), "✅"
+        )
+        _zoneDataMap[TemperatureZone.STEP_HIGHER] = ZoneData(
+            TemperatureZone.STEP_HIGHER, "Step Higher", Color(0xFFF59E0B), "⬆️"
+        )
+        _zoneDataMap[TemperatureZone.TOO_HIGH] = ZoneData(
+            TemperatureZone.TOO_HIGH, "Too High", Color(0xFFEF4444), "🔥"
+        )
+    }
+
+    private fun updateZoneTracking(temperature: Double) {
+        if (!_isMonitoring.value || _isPaused.value) return
+
+        val currentTime = System.currentTimeMillis()
+        val (lowThreshold, _, highThreshold) = getTemperatureColorRanges(
+            mode = _activityMode.value,
+            athleticLevel = _athleticLevel.value,
+            customTop = if (_activityMode.value == ActivityMode.CUSTOM) _customTopTemperatureThreshold.value else null,
+            customBottom = if (_activityMode.value == ActivityMode.CUSTOM) _customBottomTemperatureThreshold.value else null
+        )
+
+        val newZone = getTemperatureZone(temperature, lowThreshold, highThreshold)
+
+        // Update time spent in previous zone
+        if (_lastZoneUpdateTime.value > 0) {
+            val timeSpentInSeconds = ((currentTime - _lastZoneUpdateTime.value) / 1000).toInt()
+            _zoneDataMap[_currentZone.value]?.let { zoneData ->
+                zoneData.timeInSeconds += timeSpentInSeconds
+                _zoneDataMap[_currentZone.value] = zoneData
+            }
+        }
+
+        _currentZone.value = newZone
+        _lastZoneUpdateTime.value = currentTime
+    }
+
+    private fun resetZoneTracking() {
+        initializeZoneData()
+        _sessionStartTime.value = System.currentTimeMillis()
+        _lastZoneUpdateTime.value = System.currentTimeMillis()
+        _currentZone.value = TemperatureZone.PERFECT
     }
 
     private fun updateAverageTemperature(newValue: Double) {
@@ -198,15 +361,16 @@ class MainActivity : ComponentActivity() {
         _customBottomTemperatureThreshold.value = sharedPref.getFloat("custom_bottom_threshold", 36.5f).toDouble()
     }
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
         notificationsManager = NotificationsManager(applicationContext)
-
         temperatureLogger = TemperatureLogger(this)
         bluetoothManager = BluetoothManager(this)
+
+        // Initialize zone tracking
+        initializeZoneData()
 
         bluetoothManager.setOnConnectionStatusChanged { isConnected, signalStrength ->
             _isConnected.value = isConnected
@@ -222,9 +386,9 @@ class MainActivity : ComponentActivity() {
         bluetoothManager.setOnMonitoringStatusChanged { isMonitoring ->
             _isMonitoring.value = isMonitoring
             if (isMonitoring) {
-                // Start a new session with the currently selected sport
                 temperatureLogger.startNewSession(_selectedSport.value)
                 resetAverageTemperature()
+                resetZoneTracking()
             }
         }
 
@@ -239,6 +403,7 @@ class MainActivity : ComponentActivity() {
             if (_isMonitoring.value && !_isPaused.value) {
                 updateAverageTemperature(tempCore)
                 temperatureLogger.logTemperature(tempCore)
+                updateZoneTracking(tempCore)
 
                 val (lowThreshold, _, highThreshold) = getTemperatureColorRanges(
                     mode = _activityMode.value,
@@ -292,6 +457,7 @@ class MainActivity : ComponentActivity() {
                         athleticLevel = _athleticLevel,
                         customTopThreshold = _customTopTemperatureThreshold,
                         customBottomThreshold = _customBottomTemperatureThreshold,
+                        zoneDataMap = _zoneDataMap,
                         onPauseToggle = {
                             bluetoothManager.togglePause()
                             Toast.makeText(this, if (_isPaused.value) "Monitoring paused" else "Monitoring resumed", Toast.LENGTH_SHORT).show()
@@ -363,6 +529,7 @@ class MainActivity : ComponentActivity() {
         athleticLevel: State<String>,
         customTopThreshold: State<Double>,
         customBottomThreshold: State<Double>,
+        zoneDataMap: Map<TemperatureZone, ZoneData>,
         onPauseToggle: () -> Unit,
         onMonitoringToggle: () -> Unit,
         onGoToProfile: () -> Unit,
@@ -371,28 +538,42 @@ class MainActivity : ComponentActivity() {
         onSportChange: (Sport) -> Unit,
         onCustomThresholdsChange: (top: Double, bottom: Double) -> Unit
     ) {
-        HomeScreen(
-            isConnected = isConnected.value,
-            connectionQuality = connectionQuality.value,
-            temperatureOutside = temperatureOutside.value,
-            temperatureSkin = temperatureSkin.value,
-            temperatureCore = temperatureCore.value,
-            batteryLevel = batteryLevel.value,
-            isPaused = isPaused.value,
-            isMonitoring = isMonitoring.value,
-            activityMode = activityMode.value,
-            selectedSport = selectedSport.value,
-            athleticLevel = athleticLevel.value,
-            customTopThreshold = customTopThreshold.value,
-            customBottomThreshold = customBottomThreshold.value,
-            onPauseToggle = onPauseToggle,
-            onMonitoringToggle = onMonitoringToggle,
-            onGoToProfile = onGoToProfile,
-            onGoToHistory = onGoToHistory,
-            onActivityModeChange = onActivityModeChange,
-            onSportChange = onSportChange,
-            onCustomThresholdsChange = onCustomThresholdsChange
-        )
+        var showHeatZones by remember { mutableStateOf(false) }
+
+        if (showHeatZones) {
+            HeatZoneScreen(
+                zoneDataMap = zoneDataMap,
+                activityMode = activityMode.value,
+                athleticLevel = athleticLevel.value,
+                customTopThreshold = customTopThreshold.value,
+                customBottomThreshold = customBottomThreshold.value,
+                onBack = { showHeatZones = false }
+            )
+        } else {
+            HomeScreen(
+                isConnected = isConnected.value,
+                connectionQuality = connectionQuality.value,
+                temperatureOutside = temperatureOutside.value,
+                temperatureSkin = temperatureSkin.value,
+                temperatureCore = temperatureCore.value,
+                batteryLevel = batteryLevel.value,
+                isPaused = isPaused.value,
+                isMonitoring = isMonitoring.value,
+                activityMode = activityMode.value,
+                selectedSport = selectedSport.value,
+                athleticLevel = athleticLevel.value,
+                customTopThreshold = customTopThreshold.value,
+                customBottomThreshold = customBottomThreshold.value,
+                onPauseToggle = onPauseToggle,
+                onMonitoringToggle = onMonitoringToggle,
+                onGoToProfile = onGoToProfile,
+                onGoToHistory = onGoToHistory,
+                onActivityModeChange = onActivityModeChange,
+                onSportChange = onSportChange,
+                onCustomThresholdsChange = onCustomThresholdsChange,
+                onShowHeatZones = { showHeatZones = true }
+            )
+        }
     }
 }
 
@@ -441,7 +622,6 @@ fun CustomThresholdDialog(
     }
 }
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
@@ -464,7 +644,8 @@ fun HomeScreen(
     onGoToHistory: () -> Unit,
     onActivityModeChange: (ActivityMode) -> Unit,
     onSportChange: (Sport) -> Unit,
-    onCustomThresholdsChange: (top: Double, bottom: Double) -> Unit
+    onCustomThresholdsChange: (top: Double, bottom: Double) -> Unit,
+    onShowHeatZones: () -> Unit
 ) {
     var showDevMenu by remember { mutableStateOf(false) }
     var homeTitleClickCount by remember { mutableIntStateOf(0) }
@@ -482,6 +663,7 @@ fun HomeScreen(
             mockBatteryLevel = batteryLevel
         }
     }
+
     val effectiveIsConnected = mockIsConnected
     val effectiveTemperatureCore = mockTemperatureCore
     val effectiveBatteryLevel = mockBatteryLevel
@@ -510,7 +692,9 @@ fun HomeScreen(
         else -> Green
     }
 
-    val currentDateStr = remember { SimpleDateFormat("dd MMMM HH:mm", Locale.getDefault()).format(Date()) }
+    val currentDateStr = remember {
+        SimpleDateFormat("dd MMMM HH:mm", Locale.getDefault()).format(Date())
+    }
 
     if (showCustomSettingsDialog) {
         CustomThresholdDialog(
@@ -527,180 +711,207 @@ fun HomeScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Home", modifier = Modifier.fillMaxWidth().clickable { homeTitleClickCount++; if (homeTitleClickCount >= 5) { showDevMenu = true; homeTitleClickCount = 0 } }, textAlign = TextAlign.Center) },
-                navigationIcon = { Row(verticalAlignment = Alignment.CenterVertically) { IconButton(onClick = onGoToHistory) { Icon(Icons.Default.History, "History") }; BluetoothStatusInTopBar(connectionQuality, Modifier.align(Alignment.CenterVertically)) } },
-                actions = { BatteryLevelIcon(effectiveBatteryLevel, effectiveIsConnected); IconButton(onClick = onGoToProfile) { Icon(Icons.Default.Person, "Profile") } }
+                title = {
+                    Text(
+                        "Home",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                homeTitleClickCount++
+                                if (homeTitleClickCount >= 5) {
+                                    showDevMenu = true
+                                    homeTitleClickCount = 0
+                                }
+                            },
+                        textAlign = TextAlign.Center
+                    )
+                },
+                actions = {
+                    IconButton(onClick = onGoToProfile) {
+                        Icon(Icons.Default.Person, contentDescription = "Profile")
+                    }
+                    IconButton(onClick = onGoToHistory) {
+                        Icon(Icons.Default.BarChart, contentDescription = "History")
+                    }
+                    IconButton(onClick = onShowHeatZones) {
+                        Icon(Icons.Outlined.BarChart, contentDescription = "Heat Zones")
+                    }
+                }
             )
         }
-    ) { innerPadding ->
-        Box(modifier = Modifier.fillMaxSize()) {
-            Column(
-                modifier = Modifier.fillMaxSize().padding(innerPadding),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text(currentDateStr, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
-                    BluetoothConnectivityIcon(connectionQuality, Modifier.size(24.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        text = when { !effectiveIsConnected -> "Disconnected"; connectionQuality == BluetoothConnectionQuality.GOOD -> "Connected (Good signal)"; connectionQuality == BluetoothConnectionQuality.MEDIUM -> "Connected (Medium signal)"; else -> "Connected (Weak signal)" },
-                        color = if (!effectiveIsConnected) colors.error else colors.onSurface
+    ) { paddingValues ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Date and Connection Status
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (effectiveIsConnected) Green.copy(alpha = 0.1f)
+                        else Red.copy(alpha = 0.1f)
                     )
-                }
-                Spacer(Modifier.height(80.dp))
-                Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Core Temperature", fontWeight = FontWeight.Bold, fontSize = 20.sp, modifier = Modifier.padding(bottom = 8.dp))
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(String.format("%.1f°C", effectiveTemperatureCore), fontSize = 32.sp, color = tempColorCore, fontWeight = FontWeight.Bold)
-                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp).alpha(0.8f)) {
-                                Text(String.format("%.1f°C", lowThreshold), color = Blue, fontSize = 12.sp)
-                                Text(" - ", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
-                                Text(String.format("%.1f°C", highThreshold), color = Red, fontSize = 12.sp)
-                            }
-                        }
-                    }
-                    Spacer(Modifier.height(16.dp))
-                    Text("Skin Temperature", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                    Text(String.format("%.1f°C", temperatureSkin), fontSize = 24.sp, color = tempColorSkin, fontWeight = FontWeight.Bold)
-                    Spacer(Modifier.height(16.dp))
-                    Text("Outside Temperature", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                    Text(String.format("%.1f°C", temperatureOutside), fontSize = 24.sp, color = tempColorOutside, fontWeight = FontWeight.Bold)
-                }
-                Spacer(Modifier.height(32.dp))
-                Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Monitoring Status", fontWeight = FontWeight.Bold, fontSize = 18.sp, modifier = Modifier.padding(bottom = 12.dp))
-                    Text(
-                        text = if (isMonitoring) if (isPaused) "Paused" else "Active" else "Inactive",
-                        fontSize = 16.sp, fontWeight = FontWeight.Medium,
-                        color = when { !isMonitoring -> colors.error; isPaused -> colors.tertiary; else -> Green },
-                        modifier = Modifier.padding(bottom = 12.dp)
-                    )
-
-                    Box {
-                        val buttonTargetWidth = 220.dp
-                        Button(
-                            onClick = { if (!isMonitoring) showModeMenu = true },
-                            modifier = Modifier.width(buttonTargetWidth),
-                            enabled = !isMonitoring,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (isMonitoring) colors.secondary else colors.primary,
-                                disabledContainerColor = colors.secondary.copy(alpha = 0.7f)
-                            ),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center
-                            ) {
-                                Icon(
-                                    imageVector = when (activityMode) {
-                                        ActivityMode.RACE -> Icons.Outlined.EmojiEvents
-                                        ActivityMode.TRAINING -> Icons.Outlined.DirectionsRun
-                                        ActivityMode.CUSTOM -> Icons.Outlined.Tune
-                                    },
-                                    contentDescription = "Activity Mode Icon",
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = "Mode: ${
-                                        when (activityMode) {
-                                            ActivityMode.RACE -> "Race"
-                                            ActivityMode.TRAINING -> "Training"
-                                            ActivityMode.CUSTOM -> "Custom"
-                                        }
-                                    }"
-                                )
-                            }
-                        }
-                        DropdownMenu(
-                            expanded = showModeMenu && !isMonitoring,
-                            onDismissRequest = { showModeMenu = false },
-                            modifier = Modifier.width(buttonTargetWidth)
-                        ) {
-                            DropdownMenuItem(
-                                text = { Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Outlined.DirectionsRun, "Training Icon", Modifier.size(20.dp)); Spacer(Modifier.width(8.dp)); Text("Training") } },
-                                onClick = { onActivityModeChange(ActivityMode.TRAINING); showModeMenu = false },
-                                leadingIcon = { if (activityMode == ActivityMode.TRAINING) Icon(Icons.Default.Check, "Selected", tint = MaterialTheme.colorScheme.primary) else Box(Modifier.size(24.dp)) }
-                            )
-                            DropdownMenuItem(
-                                text = { Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Outlined.EmojiEvents, "Race Icon", Modifier.size(20.dp)); Spacer(Modifier.width(8.dp)); Text("Race") } },
-                                onClick = { onActivityModeChange(ActivityMode.RACE); showModeMenu = false },
-                                leadingIcon = { if (activityMode == ActivityMode.RACE) Icon(Icons.Default.Check, "Selected", tint = MaterialTheme.colorScheme.primary) else Box(Modifier.size(24.dp)) }
-                            )
-                            DropdownMenuItem(
-                                text = { Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Outlined.Tune, "Custom Icon", Modifier.size(20.dp)); Spacer(Modifier.width(8.dp)); Text("Custom") } },
-                                onClick = { onActivityModeChange(ActivityMode.CUSTOM); showModeMenu = false },
-                                leadingIcon = { if (activityMode == ActivityMode.CUSTOM) Icon(Icons.Default.Check, "Selected", tint = MaterialTheme.colorScheme.primary) else Box(Modifier.size(24.dp)) }
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    if (activityMode == ActivityMode.CUSTOM && !isMonitoring) {
-                        Button(
-                            onClick = { showCustomSettingsDialog = true },
-                            modifier = Modifier.width(220.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                            )
-                        ) {
-                            Text("Edit Custom Mode Settings")
-                        }
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = currentDateStr,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
                         Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = if (effectiveIsConnected) Icons.Default.BluetoothConnected
+                                else Icons.Default.BluetoothDisabled,
+                                contentDescription = "Connection Status",
+                                tint = if (effectiveIsConnected) Green else Red
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = if (effectiveIsConnected) "Connected" else "Disconnected",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = if (effectiveIsConnected) Green else Red,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        if (effectiveIsConnected) {
+                            Text(
+                                text = "Signal: ${connectionQuality.name}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            )
+                        }
                     }
+                }
+            }
 
+            // Temperature Cards
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    TemperatureCard(
+                        title = "Core",
+                        temperature = effectiveTemperatureCore,
+                        color = tempColorCore,
+                        modifier = Modifier.weight(1f)
+                    )
+                    TemperatureCard(
+                        title = "Skin",
+                        temperature = temperatureSkin,
+                        color = tempColorSkin,
+                        modifier = Modifier.weight(1f)
+                    )
+                    TemperatureCard(
+                        title = "Outside",
+                        temperature = temperatureOutside,
+                        color = tempColorOutside,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
 
-                    Box {
-                        val buttonTargetWidth = 220.dp
-                        Button(
-                            onClick = { if (!isMonitoring) showSportMenu = true },
-                            modifier = Modifier.width(buttonTargetWidth),
-                            enabled = !isMonitoring,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (isMonitoring) colors.secondary else colors.primary,
-                                disabledContainerColor = colors.secondary.copy(alpha = 0.7f)
-                            ),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+            // Battery Level
+            if (effectiveIsConnected) {
+                item {
+                    Card(modifier = Modifier.fillMaxWidth()) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(
-                                    imageVector = when (selectedSport) {
-                                        Sport.RUNNING -> Icons.Outlined.DirectionsRun
-                                        Sport.CYCLING -> Icons.Outlined.DirectionsBike
-                                        Sport.KAYAKING -> Icons.Outlined.Kayaking
+                                    imageVector = when {
+                                        effectiveBatteryLevel >= 90 -> Icons.Default.BatteryFull
+                                        effectiveBatteryLevel >= 75 -> Icons.Default.Battery6Bar
+                                        effectiveBatteryLevel >= 60 -> Icons.Default.Battery5Bar
+                                        effectiveBatteryLevel >= 45 -> Icons.Default.Battery4Bar
+                                        effectiveBatteryLevel >= 30 -> Icons.Default.Battery3Bar
+                                        effectiveBatteryLevel >= 15 -> Icons.Default.Battery2Bar
+                                        effectiveBatteryLevel > 0 -> Icons.Default.Battery1Bar
+                                        else -> Icons.Default.Battery0Bar
                                     },
-                                    contentDescription = "Selected Sport Icon",
-                                    modifier = Modifier.size(20.dp)
+                                    contentDescription = "Battery",
+                                    tint = when {
+                                        effectiveBatteryLevel >= 50 -> Green
+                                        effectiveBatteryLevel >= 25 -> Color(0xFFF59E0B)
+                                        else -> Red
+                                    }
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = "Sport: ${
-                                        when (selectedSport) {
-                                            Sport.RUNNING -> "Running"
-                                            Sport.CYCLING -> "Cycling"
-                                            Sport.KAYAKING -> "Kayaking"
-                                        }
-                                    }"
+                                    text = "Battery: ${effectiveBatteryLevel.roundToInt()}%",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            LinearProgressIndicator(
+                                progress = (effectiveBatteryLevel / 100.0).toFloat(),
+                                modifier = Modifier.fillMaxWidth(),
+                                color = when {
+                                    effectiveBatteryLevel >= 50 -> Green
+                                    effectiveBatteryLevel >= 25 -> Color(0xFFF59E0B)
+                                    else -> Red
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Activity Mode and Sport Selection
+            item {
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(
+                        modifier = Modifier.padding(16.dp)
+                    ) {
+                        Text(
+                            text = "Activity Settings",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Activity Mode
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            ActivityMode.values().forEach { mode ->
+                                FilterChip(
+                                    onClick = { onActivityModeChange(mode) },
+                                    label = { Text(mode.name.lowercase().replaceFirstChar { it.uppercase() }) },
+                                    selected = activityMode == mode,
+                                    modifier = Modifier.weight(1f)
                                 )
                             }
                         }
-                        DropdownMenu(
-                            expanded = showSportMenu && !isMonitoring,
-                            onDismissRequest = { showSportMenu = false },
-                            modifier = Modifier.width(buttonTargetWidth)
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Sport Selection
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Sport.values().forEach { sport ->
-                                DropdownMenuItem(
-                                    text = {
+                                FilterChip(
+                                    onClick = { onSportChange(sport) },
+                                    label = {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Icon(
                                                 imageVector = when (sport) {
@@ -708,49 +919,214 @@ fun HomeScreen(
                                                     Sport.CYCLING -> Icons.Outlined.DirectionsBike
                                                     Sport.KAYAKING -> Icons.Outlined.Kayaking
                                                 },
-                                                contentDescription = "${sport.name} Icon",
-                                                modifier = Modifier.size(20.dp)
+                                                contentDescription = null,
+                                                modifier = Modifier.size(16.dp)
                                             )
-                                            Spacer(Modifier.width(8.dp))
-                                            Text(
-                                                when (sport) {
-                                                    Sport.RUNNING -> "Running"
-                                                    Sport.CYCLING -> "Cycling"
-                                                    Sport.KAYAKING -> "Kayaking"
-                                                }
-                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(sport.name.lowercase().replaceFirstChar { it.uppercase() })
                                         }
                                     },
-                                    onClick = { onSportChange(sport); showSportMenu = false },
-                                    leadingIcon = { if (selectedSport == sport) Icon(Icons.Default.Check, "Selected", tint = MaterialTheme.colorScheme.primary) else Box(Modifier.size(24.dp)) }
+                                    selected = selectedSport == sport,
+                                    modifier = Modifier.weight(1f)
                                 )
                             }
                         }
-                    }
 
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(onClick = onPauseToggle, enabled = effectiveIsConnected && isMonitoring, colors = ButtonDefaults.buttonColors(containerColor = if (isPaused) Green else colors.tertiary)) { Text(if (isPaused) "Resume" else "Pause") }
-                        Button(onClick = onMonitoringToggle, enabled = effectiveIsConnected, colors = ButtonDefaults.buttonColors(containerColor = if (isMonitoring) Red else Green)) { Text(if (isMonitoring) "Stop" else "Start") }
+                        // Custom Settings Button
+                        if (activityMode == ActivityMode.CUSTOM) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Button(
+                                onClick = { showCustomSettingsDialog = true },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(Icons.Outlined.Tune, contentDescription = null)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Custom Thresholds")
+                            }
+                        }
+
+                        // Current thresholds display
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = "Current Range: ${lowThreshold.toString().take(4)}°C - ${highThreshold.toString().take(4)}°C",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        )
                     }
                 }
-                Spacer(modifier = Modifier.height(32.dp))
-                Text(
-                    text = when { !effectiveIsConnected -> "Please connect a temperature sensor"; !isMonitoring -> "Press Start to begin monitoring"; isPaused -> "Monitoring is paused"; else -> "Monitoring in progress" },
-                    color = when { !effectiveIsConnected -> colors.error; !isMonitoring -> colors.onSurfaceVariant; isPaused -> colors.tertiary; else -> Green },
-                    fontSize = 14.sp, textAlign = TextAlign.Center
-                )
             }
+
+            // Control Buttons
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Start/Stop Monitoring
+                    Button(
+                        onClick = onMonitoringToggle,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (isMonitoring) Red else Green
+                        ),
+                        enabled = effectiveIsConnected
+                    ) {
+                        Icon(
+                            imageVector = if (isMonitoring) Icons.Default.Stop else Icons.Default.PlayArrow,
+                            contentDescription = null
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(if (isMonitoring) "Stop" else "Start")
+                    }
+
+                    // Pause/Resume (only show when monitoring)
+                    if (isMonitoring) {
+                        Button(
+                            onClick = onPauseToggle,
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (isPaused) Green else Color(0xFFF59E0B)
+                            )
+                        ) {
+                            Icon(
+                                imageVector = if (isPaused) Icons.Default.PlayArrow else Icons.Default.Pause,
+                                contentDescription = null
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(if (isPaused) "Resume" else "Pause")
+                        }
+                    }
+                }
+            }
+
+            // Monitoring Status
+            if (isMonitoring || isPaused) {
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (isPaused) Color(0xFFF59E0B).copy(alpha = 0.1f)
+                            else Green.copy(alpha = 0.1f)
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = if (isPaused) Icons.Default.Pause else Icons.Default.FiberManualRecord,
+                                contentDescription = null,
+                                tint = if (isPaused) Color(0xFFF59E0B) else Red
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = if (isPaused) "Monitoring Paused" else "Monitoring Active",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isPaused) Color(0xFFF59E0B) else Green
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Developer Menu (when enabled)
             if (showDevMenu) {
-                DeveloperMenu(
-                    isConnected = mockIsConnected, onIsConnectedChange = { mockIsConnected = it },
-                    temperatureCore = mockTemperatureCore, onTemperatureCoreChange = { mockTemperatureCore = it },
-                    batteryLevel = mockBatteryLevel, onBatteryLevelChange = { mockBatteryLevel = it },
-                    onClose = { showDevMenu = false }
-                )
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp)
+                        ) {
+                            Text(
+                                text = "Developer Menu",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Button(
+                                    onClick = { mockIsConnected = !mockIsConnected },
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text("Toggle Connection")
+                                }
+                                Button(
+                                    onClick = {
+                                        mockTemperatureCore = if (mockTemperatureCore < 39.0) 39.5 else 36.5
+                                    },
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text("Mock Temp")
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Button(
+                                onClick = { showDevMenu = false },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.error
+                                )
+                            ) {
+                                Text("Close Dev Menu")
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Add some bottom padding
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }
 }
 
-
+@Composable
+fun TemperatureCard(
+    title: String,
+    temperature: Double,
+    color: Color,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(
+            containerColor = color.copy(alpha = 0.1f)
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = if (temperature > 0) "${String.format("%.1f", temperature)}°C" else "--",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = color,
+                fontSize = 18.sp
+            )
+        }
+    }
+}
