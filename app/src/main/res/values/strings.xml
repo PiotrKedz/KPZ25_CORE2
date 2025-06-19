@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">InnerTemp</string>
+    <string name="channel_name">TEMP_ALERT</string>
+    <string name="channel_description">Notifications of temperature out of range</string>
+    <string name="default_web_client_id">YOUR_WEB_CLIENT_ID</string>
+    <string name="facebook_app_id">YOUR_FACEBOOK_APP_ID</string>
+    <string name="fb_login_protocol_scheme">fbYOUR_FACEBOOK_APP_ID</string>
+    <string name="facebook_client_token">YOUR_FACEBOOK_CLIENT_TOKEN</string>
+</resources>
