@@ -1,0 +1,34 @@
+[
+    {
+        "merged": "com.example.wearos-debug-92:/mipmap-xxhdpi_ic_launcher.webp.flat",
+        "source": "com.example.wearos-main-94:/mipmap-xxhdpi/ic_launcher.webp"
+    },
+    {
+        "merged": "com.example.wearos-debug-92:/mipmap-xxxhdpi_ic_launcher.webp.flat",
+        "source": "com.example.wearos-main-94:/mipmap-xxxhdpi/ic_launcher.webp"
+    },
+    {
+        "merged": "com.example.wearos-debug-92:/drawable_splash_icon.xml.flat",
+        "source": "com.example.wearos-main-94:/drawable/splash_icon.xml"
+    },
+    {
+        "merged": "com.example.wearos-debug-92:/mipmap-mdpi_ic_launcher.webp.flat",
+        "source": "com.example.wearos-main-94:/mipmap-mdpi/ic_launcher.webp"
+    },
+    {
+        "merged": "com.example.wearos-debug-92:/mipmap-xhdpi_ic_launcher.webp.flat",
+        "source": "com.example.wearos-main-94:/mipmap-xhdpi/ic_launcher.webp"
+    },
+    {
+        "merged": "com.example.wearos-debug-92:/mipmap-hdpi_ic_launcher.webp.flat",
+        "source": "com.example.wearos-main-94:/mipmap-hdpi/ic_launcher.webp"
+    },
+    {
+        "merged": "com.example.wearos-debug-92:/drawable_tile_preview.png.flat",
+        "source": "com.example.wearos-main-94:/drawable/tile_preview.png"
+    },
+    {
+        "merged": "com.example.wearos-debug-92:/drawable-round_tile_preview.png.flat",
+        "source": "com.example.wearos-main-94:/drawable-round/tile_preview.png"
+    }
+]
